@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+    <head>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="initial-scale=1, width=device-width">
+
+        <link href="/static/favicon.ico" rel="icon">
+
+        <link href="/static/styles.css" rel="stylesheet">
+
+        <title>{% block title %}{% endblock %}</title>
+
+    </head>
+
+    <body class="body">
+        <div class="section">
+            <nav>
+                <a href="/">Surivor Pool</a> 
+            </nav>
+        </div>
+        
+        
+        <main>
+            {% block main %}{% endblock %}
+        </main>
+        
+
+    </body>
+
+</html>

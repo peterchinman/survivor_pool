@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Welcome to Survivor Pool Creator
+{% endblock %}
+
+{% block main %}
+<div class="section">
+    <h1>Welcome to Survivor Pool</h1>
+    <a href="/pool/create">Create a Pool</a>
+</div>
+
+<div class="section">
+    <img src="{{ goodbye[0]['image_path'] }}" style="width:500px" alt="{{ goodbye[0]['contestant'] }}">
+    <h2>Goodbye {{ goodbye[0]['contestant'] }}!</h2>
+    <p>Voted out in Week {{ goodbye[0]['voted_out_in_week'] }}</p>
+
+
+</div>
+
+</body>
+{% endblock %}

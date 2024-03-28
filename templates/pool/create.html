@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Create a Pool
+{% endblock %}
+
+{% block main %}
+    <form action="/pool/create" method="post">
+        <div>
+            <input autocomplete="off" autofocus name="pool_name" placeholder="Pool Name" type="text" required>
+            <label for="pool_name">Choose a name for your Survivor Pool</label>
+        </div>
+        <div>
+            <input name="username" placeholder="Username" type="text">
+            <label for="username">Choose a Username for your pool admin account</label>
+        </div>
+        <div>
+            <input name="password" placeholder="Password" type="password">
+            <label for="password">Choose a Password for your pool admin account</label>
+        </div>
+        <div>
+            <input name="confirmation" placeholder="Password Confirmation" type="password">
+            <label for="confirmation">Confirm password</label>
+        </div>
+        <button type="submit">Create Pool</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    {{ pool_name }}
+{% endblock %}
+
+{% block main %}
+<div class="section">
+    <h1>{{ pool_name }}</h1>
+</div>
+<div class="pool_table">
+
+    <table>
+       <!-- <thead>
+             <tr>
+                <th>User</th>
+                <th colspan="{{ num_picks }}">Picks</th>
+                <th>Points</th>
+            </tr> 
+        </thead>
+        -->
+        <tbody>
+        {% for row in rows %}
+        <tr>
+            <td class="username">{{ row.username }}</td>
+            <td style="width: 10px;"></td>
+            {% for i in range(num_picks) %}
+            {% if row['voted_out_in_week' ~ i] > 0 %}
+            <td><img src="{{ row['pick' ~ i] }}" width="100" class="voted_out"></td>
+            {% else %}
+            <td><img src="{{ row['pick' ~ i] }}" width="100"></td>
+            {% endif %}
+            {% endfor %}
+            <td style="width: 10px;"></td>
+            <td class="rowpoints">{{ row.points }}</td>
+            
+            
+        </tr>
+    {% endfor %}
+        </tbody>
+    </table>
+    
+</div>
+</body>
+{% endblock %}

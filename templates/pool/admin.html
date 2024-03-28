@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    SET UP {{ pool_name }}
+{% endblock %}
+
+{% block main %}
+    <h1> set up {{ pool_name }}</h1>
+    <form action="{{ url_for('pool_admin', pool_name=pool_name) }}" method="post">
+        {% if row['pool_type'] is not defined or not row['pool_type'] %}
+        <div>
+            <label for="pool_password">Choose a password for {{pool_name}} pool</label>
+            <input autocomplete="off" autofocus name="pool_password" placeholder="Pool Password" type="text" required> 
+        </div>
+        <div>
+            <label for="pool_type">Choose your Pool Type</label>
+            <select id="pool_type" name="pool_type">
+                {% for pool_type in pool_types %}
+                <option value="{{ pool_type }}">{{ pool_type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <input autocomplete="off" name="num_picks" placeholder="Number" type="number", min="0", max="18">
+            <label for="num_picks">How many Survivors will each participant pick</label>
+        </div>
+        <div>
+            <input autocomplete="off" name="pool_dollar" placeholder="$$$" type="number", min="0">
+            <label for="pool_dollar">How much money will each participant put into the pool</label>
+        </div>
+        {% endif %}
+        <button type="submit">Set up your pool!</button>
+    </form>
+{% endblock %}
