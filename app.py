@@ -44,6 +44,30 @@ def index():
 
             return render_template("index.html", goodbye=goodbye)
 
+@app.route("/admin", methods=["GET", "POST"])
+def admin():
+    if request.method == "POST":
+            voted_out = request.form.get("voted_out")
+            in_week = request.form.get("in_week")
+
+            if not voted_out:
+                return apology("You must include who was voted out", 400)
+            if not in_week:
+                return apology("You must include the week", 400)
+
+            db.execute("UPDATE survivors SET voted_out_in_week = ? WHERE contestant_id = ?", in_week, voted_out)
+
+            return redirect(url_for('index'))
+
+    if request.method == "GET":
+
+        # set up password protect!!
+
+        current_week = 1 + int(db.execute("SELECT MAX(voted_out_in_week) from survivors")[0]['MAX(voted_out_in_week)'])
+        survivors = db.execute("SELECT * FROM survivors WHERE voted_out_in_week IS NULL")
+
+        return render_template("admin.html", survivors=survivors, current_week=current_week)
+
 #login is used for getting into /pool/<pool>/admin
 @app.route("/login", methods=["GET", "POST"])
 def login():

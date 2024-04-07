@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    ADMIN
+{% endblock %}
+
+{% block main %}
+<div class="section">
+    <h1>ADMIN CONTROL PANEL</h1>
+</div>
+
+<form action="{{ url_for('admin') }}" method="post">
+    
+    <div>
+        <select name="voted_out" id="voted_out">
+        {% for survivor in survivors %}
+            <option value="{{ survivor.contestant_id }}">{{ survivor.contestant }}</option>
+        {% endfor %}
+        </select>
+    </div>
+    <div>
+        <select name="in_week" id="in_week">
+            {% for num in range(18) %}
+            {% if num == current_week %}
+            <option selected="selected" value="{{ num }}">{{ num }}</option>
+            {% else %}
+            <option value="{{ num }}">{{ num }}</option>
+            {% endif %}
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit">Submit</button>
+</form>
+
+</body>
+{% endblock %}

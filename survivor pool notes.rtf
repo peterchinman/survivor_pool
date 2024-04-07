@@ -1,0 +1,215 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2639
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fnil\fcharset0 Menlo-Regular;
+}
+{\colortbl;\red255\green255\blue255;\red144\green1\blue18;\red255\green255\blue255;\red45\green45\blue45;
+\red102\green177\blue50;\red63\green105\blue30;\red85\green142\blue40;\red201\green113\blue6;\red33\green255\blue6;
+}
+{\*\expandedcolortbl;;\cssrgb\c63922\c8235\c8235;\cssrgb\c100000\c100000\c100000;\cssrgb\c23137\c23137\c23137;
+\cssrgb\c46532\c73327\c25364;\cssrgb\c30831\c47797\c15540;\cssrgb\c39975\c61335\c20601;\cssrgb\c83336\c51866\c0;\cssrgb\c0\c97680\c0;
+}
+\margl1440\margr1440\vieww16280\viewh14380\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 admin table\
+\
+id	username		hash			pool_name	pool_password	num_picks\
+pk	text			text			text		text			integer\
+\
+pool_type	pool_password	pool_dollar\
+	\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf0 CREATE TABLE admin (\
+	id INTEGER PRIMARY KEY,\
+	username TEXT NOT NULL,\
+	hash TEXT NOT NULL,\
+	pool_name TEXT NOT NULL,\
+	pool_password text,\
+	num_picks integer,\
+	pool_type text,\
+	pool_dollar	integer\
+);
+\f0\b0 \
+\
+ALTER TABLE admin ADD COLUMN pool_type text;\
+ALTER TABLE admin ADD COLUMN pool_password text;\
+ALTER TABLE admin ADD COLUMN pool_dollar integer;\
+\
+\
+users table\
+\
+user_id	username		pool_id		\
+pk		text			foreign id		\
+\
+
+\f1\b CREATE TABLE users (\
+	user_id INTEGER PRIMARY KEY,\
+	username TEXT NOT NULL,\
+	pool_id INTEGER NOT NULL,\
+	FOREIGN KEY (pool_id) REFERENCES admin(id)\
+);
+\f0\b0 \
+\
+picks table\
+\
+id	user_id	contestant_id\
+pk	fk		fk\
+\
+
+\f1\b CREATE TABLE picks (\
+	id INTEGER PRIMARY KEY,\
+	user_id INTEGER,\
+	contestant_id INTEGER,\
+	FOREIGN KEY (user_id) REFERENCES users(user_id),\
+	FOREIGN KEY (contestant_id) REFERENCES survivors(contestant_id)\
+);
+\f0\b0 \
+\
+survivors table\
+\
+contestant_id		contestant		image_path			voted_out_in_week\
+pk			text			path to image		integer\
+						/static/survivor_images\
+\
+UPDATE survivors SET voted_out_in_week = 3 WHERE contestant = "Randen Moontalvo";\
+\
+
+\f1\b CREATE TABLE survivors (\
+	contestant_id INTEGER PRIMARY KEY AUTOINCREMENT,\
+	contestant TEXT NOT NULL,\
+	image_path TEXT NOT NULL,\
+	voted_out_in_week INTEGER\
+);\
+	
+\f0\b0 \
+\
+\
+INSERT INTO survivors (contestant, image_path)\
+VALUES ('Ben Katzman', '/static/survivor_images/ben_katzman.avif'),\
+('Bhanu Gopal', '/static/survivor_images/bhanu_gopal.avif'),\
+('Charlie Davis', '/static/survivor_images/charlie_davis.avif'),\
+('David Jelinsky', '/static/survivor_images/david_jelinsky.avif'),\
+('Hunter McKnight', '/static/survivor_images/hunter_mcknight.avif'),\
+('Jemila Hussain-Adams', '/static/survivor_images/jemila_hussain-adams.avif'),\
+('Jessica Chong', '/static/survivor_images/jessica_chong.avif'),\
+('Kenzie Petty', '/static/survivor_images/kenzie_petty.avif'),\
+('Liz Wilcox', '/static/survivor_images/liz_wilcox.avif'),\
+('Maria Gonzalez', '/static/survivor_images/maria_gonzalez.avif'),\
+('Moriah Gaynor', '/static/survivor_images/moriah_gaynor.avif'),\
+('Q Burdette', '/static/survivor_images/q_burdette.avif'),\
+('Randen Moontalvo', '/static/survivor_images/randen_moontalvo.avif'),\
+('Soda Thompson', '/static/survivor_images/soda_thompson.avif'),\
+('Tevin Davis', '/static/survivor_images/tevin_davis.avif'),\
+('Tiffany Ervin', '/static/survivor_images/tiffany_ervin.avif'),\
+('Tim Spicer', '/static/survivor_images/tim_spicer.avif'),\
+('Venus Vafa', '/static/survivor_images/\
+\
+\
+\pard\pardeftab720\partightenfactor0
+
+\f2 \cf2 \cb3 \expnd0\expndtw0\kerning0
+SELECT image_path FROM survivors JOIN picks ON survivors.contestant_id = picks.contestant_id\cf4 \cb1 \
+\cf2 \cb3 WHERE user_id IS ? ORDER BY voted_out_in_week
+\f0 \cf0 \cb1 \kerning1\expnd0\expndtw0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+\
+HTML needed\
+\
+\
+/pool\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf5 /pool/POOL\cf0 \
+\cf6 /pool/create\cf0 \
+/pool/POOL/admin\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf7 /pool/POOL/signup\cf0 \
+\cf8 /login\cf0 \
+/admin\
+\
+\
+Pages Needed:\
+\
+/login\
+	for POOL ADMIN\
+	if they try to go to pool/POOL/admin and aren't currently logged in\
+	a form\
+		username\
+		password\
+\
+/pool\
+\
+	a list of current pool, each a link to /SPECIFIC_POOL page\
+	\'bfsearch bar for searching for a pool?\
+	a link to a button to creat a pool /create\
+\
+/pool/POOL\
+	\
+	display table of current pool data\
+	\
+		display_name	picks_alive		(points)	current week\
+\
+		ranked by pionts\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf9 /pool/create\
+\
+	a form\
+		pool name\
+		user name\
+		user password\
+		\
+		which is sent via POST to update database of users\
+		redirect to /pool/POOL/admin\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+/pool/POOL/admin\
+\
+	POOL name\
+\
+	a form to create the pool\
+		pool password?\
+		pool type\
+			SURVIVE\
+				number of picks\
+				weighted cut-off points\
+					e.g. 50% of the pool is split among anyone with survivors in final 3\
+				button to add a cut-off point\
+					MERGE\
+					FINAL THREE\
+					SOLE SURVIVOR\
+				cut-off point weights must add up to 100%\
+			POINTS\
+				number of picks\
+				point-mode\
+					LINEAR\
+						#you can win without your picks winning\
+					GEOMETRIC\
+						#heavy reward for people making it to the end\
+		$ for entry (can be edited later) pool_dollar\
+\
+	after form submitted\
+	a form to invite users\
+		auto-send them an email with a link and the pool-password\
+		OR\
+		direct them to /pool/POOL/signup\
+			and give them a password\
+	a list of current Pool Users, showing who has paid with a button to mark as Paid, and to Delete\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf5 /pool/POOL/signup\
+\
+	password protected?\
+	\
+	a form\
+		user name\
+		survivor picks\
+			show a list of names and photos\
+			click on the photo as a checkbox\
+		submit button\
+		\
+		POST adds to database of users\
+	\cf0 \
+		\
+		}
