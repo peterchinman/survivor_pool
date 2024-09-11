@@ -10,22 +10,33 @@
         <link href="/static/favicon.ico" rel="icon">
 
         <link href="/static/styles.css" rel="stylesheet">
+        <script src="https://unpkg.com/htmx.org@1.9.2"
+        integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/
+            bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h"
+        crossorigin="anonymous"></script>
 
         <title>{% block title %}{% endblock %}</title>
 
     </head>
 
     <body class="body">
-        <div class="section">
+        <header class="section">
             <nav>
                 <a href="/">Surivor Pool</a> 
             </nav>
-        </div>
+        </header>
+        {% for message in get_flashed_messages() %}
+        <div class="flash">{{ message }}</div>
+        {% endfor %}
         
         
         <main>
             {% block main %}{% endblock %}
         </main>
+
+        <footer>
+
+        </footer>
         
 
     </body>

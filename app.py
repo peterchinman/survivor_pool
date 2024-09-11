@@ -36,7 +36,6 @@ def after_request(response):
     return response
 
 @app.route("/", methods=["GET", "POST"])
-#@login_required
 def index():
     if request.method == "GET":
 
@@ -45,6 +44,7 @@ def index():
             return render_template("index.html", goodbye=goodbye)
 
 @app.route("/admin", methods=["GET", "POST"])
+@login_required()
 def admin():
     if request.method == "POST":
             voted_out = request.form.get("voted_out")
@@ -101,6 +101,7 @@ def login():
         session["user_id"] = rows[0]["id"]
 
         # Redirect user to their pool admin page
+        # TO DO this should have the pool slug in it
         return redirect("/pool/admin")
 
     # User reached route via GET (as by clicking a link or via redirect)
@@ -113,20 +114,20 @@ def logout():
 
     # Forget any user_id
     session.clear()
+    flash("Logged out!")
 
     # Redirect user to login form
     return redirect("/")
 
 @app.route("/pool/create", methods=["GET", "POST"])
-#@login_required
+@login_required
 def create():
-    # Implement password
 
     if request.method == "POST":
         pool_name = request.form.get("pool_name")
         username = request.form.get("username")
         password = request.form.get("password")
-        confirmation = request.form.get("password")
+        confirmation = request.form.get("confimation")
 
         if not pool_name:
             return apology("You must include Pool Name", 400)
@@ -161,29 +162,17 @@ def create():
             if len(db.execute("SELECT username FROM admin WHERE username = ?", username)) != 0:
                 return apology("User Name already in use", 400)
             
-            #also insert pool_name here
             else:
                 hash = generate_password_hash(password)
                 db.execute("INSERT INTO admin (username, hash, pool_name) VALUES(?, ?, ?)", username, hash, sanitized_pool_name)
                 
 
 
-        #if passwords don't match
+        # else: passwords don't match
         else:
             return apology("password and confirmation do not match", 400)
         
-        # Make a sub-directory: /pool/pool_name
-        # Actually: I think I don't need to make a sub-directory?
-        # The approute can handle dynamic route
-        # Let's see if it works, if yes, I'll just delete the following
-        """
-        try:
-            os.makedirs(os.path.join('pool', sanitized_pool_name))
-        except OSError as e:
-            return f'Error creating subdirectory: {e}'
-        """
-
-         #update session with user_id, pool_name
+        #update session with user_id, pool_name
 
         rows = db.execute("SELECT * FROM admin WHERE username = ?", username)
         session["user_id"] = rows[0]["id"]

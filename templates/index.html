@@ -1,22 +1,28 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Welcome to Survivor Pool Creator
+    Survivor Pool
 {% endblock %}
 
 {% block main %}
-<div class="section">
-    <h1>Welcome to Survivor Pool</h1>
+<section class="info" hx-boost="true">
+    <p>Easily make and manage betting pools for Surivor.</p>
+
     <a href="/pool/create">Create a Pool</a>
-</div>
 
-<div class="section">
-    <img src="{{ goodbye[0]['image_path'] }}" style="width:500px" alt="{{ goodbye[0]['contestant'] }}">
-    <h2>Goodbye {{ goodbye[0]['contestant'] }}!</h2>
-    <p>Voted out in Week {{ goodbye[0]['voted_out_in_week'] }}</p>
+    <p>To start a pool, you'll need to make an account.</p>
 
+    <p>Already made a pool? <a href="/login">Log in</a> to manage an existing pool.</p>
 
-</div>
+    <a href="/pool/join">Join a Pool</a>
+
+    <p>To join a pool you'll need the <em>pool name</em> and the <em>pool password</em>.</p>
+
+</section>
+<section class="links" hx-boost="true">
+    <a href="/pool/create">Create a Pool</a>
+    <a href="/pool">Join a Pool</a>
+</section>
 
 </body>
 {% endblock %}
