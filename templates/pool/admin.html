@@ -1,15 +1,15 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    SET UP {{ pool_name }}
+    SET UP {{ pool_slug }}
 {% endblock %}
 
 {% block main %}
-    <h1> set up {{ pool_name }}</h1>
-    <form action="{{ url_for('pool_admin', pool_name=pool_name) }}" method="post">
+    <h1> set up {{ pool_slug }}</h1>
+    <form action="{{ url_for('pool_admin', pool_slug=pool_slug) }}" method="post">
         {% if row['pool_type'] is not defined or not row['pool_type'] %}
         <div>
-            <label for="pool_password">Choose a password for {{pool_name}} pool</label>
+            <label for="pool_password">Choose a password for {{pool_slug}} pool</label>
             <input autocomplete="off" autofocus name="pool_password" placeholder="Pool Password" type="text" required> 
         </div>
         <div>

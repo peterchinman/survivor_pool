@@ -1,12 +1,12 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    {{ pool_name }}
+    {{ pool_slug }}
 {% endblock %}
 
 {% block main %}
 <div class="section">
-    <h1>{{ pool_name }}</h1>
+    <h1>{{ pool_slug }}</h1>
 </div>
 <div class="pool_table">
 
@@ -22,7 +22,7 @@
         <tbody>
         {% for row in rows %}
         <tr>
-            <td class="username">{{ row.username }}</td>
+            <td class="user_name">{{ row.user_name }}</td>
             <td style="width: 10px;"></td>
             {% for i in range(num_picks) %}
             {% if row['voted_out_in_week' ~ i] > 0 %}

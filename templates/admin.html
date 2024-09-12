@@ -12,9 +12,9 @@
 <form action="{{ url_for('admin') }}" method="post">
     
     <div>
-        <select name="voted_out" id="voted_out">
-        {% for survivor in survivors %}
-            <option value="{{ survivor.contestant_id }}">{{ survivor.contestant }}</option>
+        <select name="contestant" id="contestant">
+        {% for contestant in contestants %}
+            <option value="{{ contestant.id }}">{{ contestant.name }}</option>
         {% endfor %}
         </select>
     </div>

@@ -1,15 +1,15 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Signup for {{ pool_name }}
+    Signup for {{ pool_slug }}
 {% endblock %}
 
 {% block main %}
-    <h1> signup for {{ pool_name }}</h1>
-    <form action="{{ url_for('pool_signup', pool_name=pool_name) }}" method="post">
+    <h1> signup for {{ pool_slug }}</h1>
+    <form action="{{ url_for('pool_signup', pool_slug=pool_slug) }}" method="post">
         <div>
-            <input autocomplete="off" autofocus name="username" placeholder="User Name" type="text" required>
-            <label for="pool_name">Choose your username for {{pool_name}} pool</label>
+            <input autocomplete="off" autofocus name="user_name" placeholder="User Name" type="text" required>
+            <label for="pool_slug">Choose your user_name for {{pool_slug}} pool</label>
         </div>
         <h2> Choose {{ num_picks }} contestants</h2>
         {% for survivor in survivors %}

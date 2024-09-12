@@ -1,9 +1,8 @@
 # survivor_pool
-flask website
+Flask website for creating betting pools for popular American reality television show, Survivor.
 
 
-
-## database
+## Database
 
 ```mermaid
 ---
@@ -11,41 +10,56 @@ title: Survivor Pool
 ---
 
 erDiagram
-   pool_admin{
-    integer id
-    text username
-    text password_hash
-   }
-   pool_admin ||--|| pool : "creates"
+    settings{
+        integer id
+        integer current_season
+    }
    pool{
-    integer admin_id
+    integer id
     text pool_name
+    text pool_slug
     text password_hash
-    integer num_picks
+
+    int num_picks
     text pool_type
     intger dollar_buy_in
+    integer season
    }
-   users }|--|| pool : "sign up for"
+   user }|--|{ user_pool_map : ""
+   user_pool_map }|--|{ pool : ""
+
+   user_pool_map {
+    int user_id
+    int pool_id
+    boolean is_admin
+   }
    
-   pool_admin ||--|{ users : manages
-   
-   users{
-    integer user_id
-    text user_name
-    integer pool_id
+   user{
+    integer id
+    text name
+    text email
+    text password_hash
+    boolean is_site_admin
    }
 
-   users }|--|{ picks : "select"
-   picks{
+   user }|--|{ pick : ""
+   pick{
     integer user_id
     integer contestant_id
    }
-    contestants{
+    contestant{
         integer id
         text name
         text image_path
-        integer left_in_week
+        integer left_show_in_episode
+        integer season
     }
-%% contestants }|--|{ picks : ""
-picks }|--|{ contestants : "references"  
+%% contestants }|--|{ pick : ""
+pick }|--|{ contestant : ""  
 ```
+
+database tables
+
+CREATE TABLE user (
+    id INTEGER
+)

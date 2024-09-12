@@ -7,10 +7,58 @@
 {\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c63922\c8235\c8235;\cssrgb\c100000\c100000\c100000;
 \cssrgb\c23137\c23137\c23137;\cssrgb\c46532\c73327\c25364;\cssrgb\c30831\c47797\c15540;\cssrgb\c39975\c61335\c20601;\cssrgb\c83336\c51866\c0;
 \cssrgb\c0\c97680\c0;}
-\margl1440\margr1440\vieww16280\viewh14380\viewkind0
+\margl1440\margr1440\vieww7000\viewh14380\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f0\fs24 \cf0 \
+\f0\fs24 \cf0 CREATE TABLE user (\
+	id INTEGER PRIMARY KEY,\
+	name TEXT NOT NULL,\
+	email TEXT NOT NULL,\
+	password_hash TEXT NOT NULL,\
+	is_site_admin BOOLEAN NOT NULL\
+)\
+\
+CREATE TABLE settings (\
+	id INTEGER PRIMARY KEY,\
+	current_season INTEGER NOT NULL\
+)\
+\
+CREATE TABLE pool (\
+	id INTEGER PRIMARY KEY,\
+	pool_name TEXT NOT NULL,\
+	pool_slug TEXT NOT NULL,\
+	password_hash TEXT NOT NULL,\
+	num_picks INTEGER,\
+	pool_type TEXT,\
+	dollay_buy_in NUMERIC,\
+	season INTEGER NOT NULL\
+)\
+\
+CREATE TABLE contestant (\
+	id INTEGER PRIMARY KEY,\
+	name TEXT NOT NULL,\
+	image_path TEXT NOT NULL,\
+	left_show_in_episode INTEGER NOT NULL,\
+	season INTEGER NOT NULL\
+)\
+\
+CREATE TABLE user_pool_map (\
+	user_id INTEGER NOT NULL,\
+	pool_id INTEGER NOT NULL,\
+	is_admin BOOLEAN NOT NULL,\
+	FOREIGN KEY (user_id) REFERENCES user(id),\
+	FOREIGN KEY (pool_id) REFERENCES pool(id)\
+)\
+\
+CREATE TABLE pick (\
+	user_id INTEGER NOT NULL,\
+	contestant_id INTEGER NOT NULL,\
+	FOREIGN KEY (user_id) REFERENCES user(id),\
+	FOREIGN KEY (contestant_id) REFERENCES contestant(id)\
+)\
+	\
+\
+\
 \
 admin table\
 \
@@ -27,7 +75,7 @@ pool_type	pool_password	pool_dollar\
 	username TEXT NOT NULL,\
 	hash TEXT NOT NULL,\
 	pool_name TEXT NOT NULL,\
-	pool_password text,\
+	pool_password TEXT,\
 	num_picks integer,\
 	pool_type text,\
 	pool_dollar	integer\
@@ -41,10 +89,10 @@ ALTER TABLE admin ADD COLUMN pool_dollar integer;\
 \pard\pardeftab720\partightenfactor0
 
 \f2 \cf0 \expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 \
+\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f0 \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 \
+\f0 \cf0 \kerning1\expnd0\expndtw0 \
 users table\
 \
 user_id	username		pool_id		\

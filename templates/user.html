@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Welcome, {{ user.name }}
+{% endblock %}
+
+{% block main %}
+<h1>{{ user.name }}</h1>
+
+<ul>
+   {% for pool in pools %}
+   <li class="pool-list">
+      <a href="/pool/{{ pool.pool_slug }}">{{ pool.pool_name }}</a>
+      <!-- TODO check if this jinja is working right, should it be a bool or as string? -->
+      {% if pool.is_admin == True %}
+         <a href="/pool/{{ pool.pool_slug }}/admin">admin</a>
+      {% endif %}
+   </li>
+   {% endfor %}
+</ul>
+{% endblock %}
