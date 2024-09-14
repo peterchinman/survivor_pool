@@ -2,9 +2,10 @@ import os
 import re
 
 from cs50 import SQL
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, flash, make_response, redirect, render_template, request, session, url_for
 from flask_session import Session
+from markupsafe import escape
 from slugify import slugify
 from urllib.parse import urlparse
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -12,18 +13,30 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import apology, login_required, admin_required
 
+# WIDEFRAME TODO:
+#   - Use SQLAlchemy
+#   - Use a config.py file
+#   - Consider blueprints
+#   - More robust error handling
+#       - Pass form errors back to form, consult HTMX
+#   - Get HTMX set up  
+
 # Configure application
 app = Flask(__name__)
-app.config['TEMPLATES_AUTO_RELOAD'] = True
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.secret_key = 'c0f9c9533444660bd9686d841d59c4a6fe3dc8b849fc03da8647587bd3e2681a'
+app.config['TEMPLATES_AUTO_RELOAD'] = True # turn off for production
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # set higher for production
 if (__name__ == "__main__"):
     app.run(debug=True)
 
-
 # Configure session to use filesystem (instead of signed cookies)
-app.config["SESSION_PERMANENT"] = False
+
 app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_PERMANENT"] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 Session(app)
+
+
 
 # Configure CS50 Library to use SQLite database
 db = SQL("sqlite:///survivor.db")
@@ -133,9 +146,9 @@ def admin():
             in_week = request.form.get("in_week")
 
             if not contestant:
-                return apology("You must include who was voted out", 400)
+                return apology("You must include who was voted out", 422)
             if not in_week:
-                return apology("You must include the week", 400)
+                return apology("You must include the week", 422)
 
             db.execute("UPDATE contestant SET left_show_in_episode = ? WHERE id = ?", in_week, contestant)
 
@@ -195,12 +208,67 @@ def login():
         # if we came here from somewhere else, go back there
         # TODO why isn't this working??
         next_page = request.args.get('next')
+        print(next_page)
         if next_page:
-            return redirect(next_page)
+            return redirect(url_for(next_page))
         return redirect(url_for('index'))
 
     if request.method == "GET":
         return render_template("login.html")
+    
+@app.route("/create-account", methods=["GET", "POST"])
+def create_account():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email")
+        password = request.form.get("password")
+        confirmation = request.form.get("confirmation")
+        is_site_admin = 0
+
+        if not name:
+            return apology("You must include a Name", 422)
+        if len(name) > 20:
+            return apology("Name must 20 characters or less", 422)
+        if len(name) < 2:
+            return apology("Name must be at least two characters", 422)
+        name = escape(name)
+        
+        if not email:
+            return apology("You must include an email address", 422)
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if not re.match(email_regex, email):
+            return apology("Invalid email address", 422)
+        if len(email) > 254:
+            return apology("Email address too long", 422)
+        
+        if not password:
+            return apology("You must include a password", 422)
+        if not confirmation:
+            return apology("You must include a password confirmation", 422)
+        
+        #check if email address already used
+        if len(db.execute("SELECT email FROM user WHERE email = ?", email)) != 0:
+            return apology("Email address already in use!", 422)
+        
+        # check password & hash
+
+        if password == confirmation:
+            password_hash = generate_password_hash(password)
+            user_id = db.execute("INSERT INTO user (name, email, password_hash, is_site_admin) VALUES (?, ?, ?, ?)", name, email, password_hash, 0)
+            if user_id:
+                flash("User successfully added!", "message")
+                session["user_id"] = user_id
+                # TODO set up this redirect to get us back to page we wanted to be at
+                return redirect(url_for('user', user_id=user_id))
+            else:
+                flash("Error adding user to database!", "error")
+                
+        
+
+
+
+    if request.method == "GET":
+        return render_template("create-account.html")
     
 
 @app.route("/user/<user_id>", methods=["GET", "POST"])
@@ -211,8 +279,6 @@ def user(user_id):
     if str(session["user_id"]) != user_id:
         flash("You do not have access to this page.", "error")
         return redirect(url_for('login')), 403
-    
-
     
     if request.method == "GET":
         # get pools, is_admin from user
@@ -235,33 +301,36 @@ def logout():
 
 @app.route("/pool/create", methods=["GET", "POST"])
 @login_required
-def create():
+def create_pool():
 
     if request.method == "POST":
+
+        # TODO: a user should only be able to be admin for one pool each season!
+
         pool_name = request.form.get("pool_name")
         password = request.form.get("password")
-        confirmation = request.form.get("confimation")
+        confirmation = request.form.get("confirmation")
 
         if not pool_name:
-            return apology("You must include Pool Name", 400)
+            return apology("You must include Pool Name", 422)
         if not password:
-            return apology("You must include Password", 400)
+            return apology("You must include Password", 422)
         if not confirmation:
-            return apology("You must include Confirmation", 400)
+            return apology("You must include Confirmation", 422)
 
         
         # check and sanitize pool_name
 
         # convert pool_name to pool_slug
         pool_slug = slugify(pool_name)
-        
 
         if not is_valid_subdirectory_name(pool_slug):
-            return apology("Problem with pool name, please try again.", 400)
-        # check if pool_slug already in admin (maybe not best place to do this, but it should work)
+            return apology("Problem with pool name, please try again.", 422)
+        
+        # check if pool_slug already in admin
         sanitized_pool_slug = sanitize_subdirectory_name(pool_slug)
         if len(db.execute("SELECT pool_slug FROM pool WHERE pool_slug = ?", sanitized_pool_slug)) != 0:
-            return apology("Pool Name already in use", 400)
+            return apology("Pool Name already in use", 422)
         
         # check password & confirmation
 
@@ -270,23 +339,32 @@ def create():
             # hash password
             hash = generate_password_hash(password)
             # get current season
-            current_season = db.execute("SELECT current_season FROM settings")[0]["current_season"]
+            # implemented this if else workaround for testing
+            row = db.execute("SELECT current_season FROM settings")
+            if row:
+                current_season = row[0]["current_season"]
+            else:
+                current_season = 1
+            # insert into pool
             pool_id = db.execute("INSERT INTO pool (password_hash, pool_name, pool_slug, season) VALUES(?, ?, ?, ?)", hash, pool_name, sanitized_pool_slug, current_season)
             # insert into user_pool_map
-            db.execute("INSERT INTO user_pool_map (user_id, pool_id) VALUES (?, ?)", session["user_id"], pool_id)
+            db.execute("INSERT INTO user_pool_map (user_id, pool_id, is_admin) VALUES (?, ?, ?)", session["user_id"], pool_id, 1)
     
             
 
 
         # else: passwords don't match
         else:
-            return apology("password and confirmation do not match", 400)
+            return apology("password and confirmation do not match", 422)
     
         # TODO is this the right re-direct? or separate <pool>/setup page? how to check if pool has been properly setup?
         return redirect(url_for('pool_admin', pool_slug = sanitized_pool_slug))
 
     if request.method == "GET":
         return render_template("pool/create.html")
+
+
+# TODO these probably shouldn't be floating in the global
 
 ALLOWED_pool_slug_REGEX = re.compile(r'^[a-zA-Z0-9_-]+$')
 ALLOWED_USER_NAME_REGEX = re.compile(r'^[a-zA-Z0-9\._-]+$')
@@ -315,22 +393,25 @@ def show_pool(pool_slug):
         # render template with pool login form?
 
         # get num_picks
-        num_picks = db.execute("SELECT * FROM admin WHERE pool_slug IS ?", pool_slug)[0]["num_picks"]
+        num_picks = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)[0]["num_picks"]
         current_week = 1 + int(db.execute("SELECT MAX(left_show_in_episode) from survivors")[0]['MAX(left_show_in_episode)'])
 
 
         # First Get Rows of unique users from <pool_slug>
         
-        rows = db.execute("""SELECT * FROM users
-                                WHERE pool_id IS (SELECT id FROM admin WHERE pool_slug is ?)
+        rows = db.execute("""SELECT * FROM user_pool_map
+                                JOIN user
+                                ON user_pool_map.user_id = user.id
+                                WHERE pool_id IS (SELECT id FROM pool WHERE pool_slug is ?)
                                 ORDER BY user_id""", pool_slug)
 
         # Now iterate over rows getting users picks, left_show_in_episode, and points and adding them to each row-dict
         # formatted [{'pick0': [img path], 'left_show_in_episode0': [insert week pick0 voted out in] 'pick1' : ____, …, 'points' : user_total_points}]
         for row in rows:
 
-            rows_of_picks = db.execute("""SELECT image_path, left_show_in_episode FROM survivors
-                                            JOIN picks ON survivors.contestant_id = picks.contestant_id
+            rows_of_picks = db.execute("""SELECT image_path, left_show_in_episode, name 
+                                            FROM contestant
+                                            JOIN pick ON contestant.id = pick.contestant_id
                                             WHERE user_id IS ?
                                             ORDER BY left_show_in_episode""", row['user_id'])
 
@@ -338,7 +419,6 @@ def show_pool(pool_slug):
             user_total_points = 0
             for j in range(len(rows_of_picks)):
                 # rows_of_picks[j]['x'] x need to be the same as SELECT x from rows_of_picks
-                # TODO: cool to have greyed out version of the images for survivors voted out
                 row[f'pick{j}'] = rows_of_picks[j]['image_path']
                 # below int conversion requires "or 0" in case of None
                 # thus surivors who haven't been voted out, have value 0
@@ -356,14 +436,28 @@ def show_pool(pool_slug):
 
         return render_template("pool/pool_slug.html", num_picks=num_picks, current_week=current_week, rows=rows, pool_slug=pool_slug)
 
-# TODO this should maybe be a list of dicts with keys as html name and values as html dispay?
-pool_types = ['points', 'sole survivor']
+
 
 @app.route('/pool/<pool_slug>/admin', methods=["GET", "POST"])
+@login_required
 def pool_admin(pool_slug):
     # TODO: set up password protect for this page? simple as throwing in login decoration?
+
+    is_admin_row = db.execute("SELECT is_admin FROM user_pool_map WHERE user_id = ? AND pool_id = (SELECT id FROM pool WHERE pool_slug = ?)", session["user_id"], pool_slug)
+    if is_admin_row:
+        is_admin = result[0]["is_admin"]
+    else:
+        is_admin = None
+    if not is_admin:
+        flash("You are not authorized to access this page.", "warning")
+        return redirect(url_for('index')), 403
+
     if request.method == "GET":
-        row = db.execute("SELECT * FROM admin WHERE pool_slug IS ?", pool_slug)[0]
+
+        # TODO this should maybe be a list of dicts with keys as html name and values as html dispay?
+        pool_types = ['points', 'sole survivor']
+
+        row = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)[0]
         return render_template("pool/admin.html", pool_types=pool_types, row=row, pool_slug=pool_slug)
 
     if request.method == "POST":
@@ -372,65 +466,64 @@ def pool_admin(pool_slug):
         pool_dollar = int(request.form.get("pool_dollar"))
         num_picks = int(request.form.get("num_picks"))
 
-        if not pool_password:
-            return apology("Pool Password required", 400)
-        if pool_type not in pool_types:
-            return apology("Incorrect pool type", 400)
-        if pool_dollar < 0:
-            return apology("Pool dollar amount can not be negative", 400)
-        if not num_picks:
-            return apology("Must choose number of Survivor picks", 400)
-        if num_picks <=0 or num_picks >=18:
-            return apology("Invalid number of Survivor picks", 400)
+        password_hash = generate_password_hash(pool_password)
 
-        db.execute("""UPDATE admin
-                      SET pool_password = ?,
+        if not pool_password:
+            return apology("Pool Password required", 422)
+        if pool_type not in pool_types:
+            return apology("Incorrect pool type", 422)
+        if pool_dollar < 0:
+            return apology("Pool dollar amount can not be negative", 422)
+        if not num_picks:
+            return apology("Must choose number of Survivor picks", 422)
+        if num_picks <=0 or num_picks >=18:
+            return apology("Invalid number of Survivor picks", 422)
+
+        db.execute("""UPDATE pool
+                      SET password_hash = ?,
                       pool_type = ?,
-                      pool_dollar = ?,
+                      dollar_buy_in = ?,
                       num_picks = ?
                       WHERE pool_slug is ?"""
-                    , pool_password, pool_type, pool_dollar, num_picks, pool_slug)
+                    , password_hash, pool_type, pool_dollar, num_picks, pool_slug)
         
-        return redirect(url_for('pool_admin', pool_slug=pool_slug))
+        return redirect(url_for('show_pool', pool_slug=pool_slug))
         
 @app.route('/pool/<pool_slug>/signup', methods=["GET", "POST"])
 def pool_signup(pool_slug):
     if request.method == "GET":
 
-        #implement pool password
+        # TODO implement pool password
 
         # check pool_slug
-        pool_slug_check = db.execute("SELECT * FROM admin WHERE pool_slug IS ?", pool_slug)
+        # TODO is this necessary? 
+        pool_slug_check = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)
         if len(pool_slug_check) != 1:
-            return apology("Not a valid Pool Name", 400)
+            return apology("Not a valid Pool", 422)
 
         # get list of survivors
-        survivors = db.execute("SELECT * FROM survivors")
+        contestants = db.execute("SELECT * FROM contestants")
 
-        # get num_picks TODO should all pool settings be in separate POOL table?
+        # get num_picks
 
         num_picks = pool_slug_check[0]["num_picks"]
         
-        return render_template("pool/signup.html", pool_slug=pool_slug, survivors=survivors, num_picks=num_picks)
+        return render_template("pool/signup.html", pool_slug=pool_slug, contestants=contestants, num_picks=num_picks)
 
     if request.method == "POST":
         
+        # TODO get user somehow
         user_name = request.form.get("user_name")
         picks = request.form.getlist("checkboxes")
 
         num_picks = db.execute("SELECT * FROM admin WHERE pool_slug IS ?", pool_slug)[0]["num_picks"]
 
-        #check user_name and number of picks
-        if not user_name:
-            return apology("You must enter a user_name", 400)
-        if len(db.execute("""SELECT * FROM users WHERE user_name IS ? 
-                        AND pool_id is (SELECT id FROM admin WHERE pool_slug IS ?)""",
-                        user_name, pool_slug)) > 0:
-            return apology ("That user_name is already in use in your pool", 400)
+        #check number of picks TODO implement client side verification
         if len(picks) != num_picks:
-            return apology("Wrong number of contestants selected", 400)
+            return apology("Wrong number of contestants selected", 422)
 
-        #update users and picks databases
+        # TODO make these work with the current system
+        # update users and picks databases
         
         db.execute("""INSERT INTO users (user_name, pool_id) 
                         VALUES (?,
@@ -442,9 +535,6 @@ def pool_signup(pool_slug):
                         VALUES ((SELECT user_id FROM users WHERE user_name is ?),
                                 ?)""", 
                         user_name, int(pick))
-
-        # actually: no reason to update the session with this
-        # session["pool_user_id"] = db.execute("SELECT * FROM users WHERE user_name IS ?", user_name)[0]["user_id"]
 
         return redirect(url_for('show_pool', pool_slug=pool_slug))
         

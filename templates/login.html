@@ -5,13 +5,16 @@
 {% endblock %}
 
 {% block main %}
-    <form action="/login" method="post">
-        <div class="mb-3">
-            <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="email" placeholder="email" type="text">
-        </div>
-        <div class="mb-3">
-            <input class="form-control mx-auto w-auto" name="password" placeholder="Password" type="password">
-        </div>
-        <button class="btn btn-primary" type="submit">Log In</button>
+    <a href="{{ url_for('create_account') }}" class ="loud-voice">Create an Account</a>
+    <p>or</p>
+    <h1 class="loud-voice"></h1>
+    <form action="{{ url_for('login', next=request.args.get('next')) }}" method="post">
+        <!-- TODO client side verification of this form -->
+        <label for="email">Email Address</label>
+        <input autocomplete="off" autofocus name="email" placeholder="name@email.com" type="text">
+
+        <input name="password" placeholder="Password" type="password">
+     
+        <button type="submit">Log In</button>
     </form>
 {% endblock %}

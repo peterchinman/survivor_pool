@@ -2,49 +2,72 @@
 
 <html lang="en">
 
-    <head>
+<head>
 
-        <meta charset="utf-8">
-        <meta name="viewport" content="initial-scale=1, width=device-width">
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width">
 
-        <link href="/static/favicon.ico" rel="icon">
+    <link href="/static/favicon.ico" rel="icon">
 
-        <link href="/static/styles.css" rel="stylesheet">
-        <script src="https://unpkg.com/htmx.org@1.9.2"
-        integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/
-            bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h"
-        crossorigin="anonymous"></script>
+    <link href="/static/styles.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.2"
+    integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/
+        bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h"
+    crossorigin="anonymous"></script>
 
-        <title>{% block title %}{% endblock %}</title>
+    <title>{% block title %}{% endblock %}</title>
 
-    </head>
+</head>
 
-    <body class="body">
-        <header class="section">
-            <nav>
-                <a href="/">Surivor Pool</a> 
-            </nav>
-        </header>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <ul class="flash">
-                {% for category, message in messages %}
-                    <li class=" {{ category }}">{{ message }}</li>
-                {% endfor %}
+<body class="body">
+
+<header class="section">
+    <inner-column>
+        <nav>
+            <ul class="site-menu">
+                <li>
+                    <a href="/">Surivor Pool</a>
+                </li>
+                {% if session['username'] %}
+                <li>
+                    <a href="/user/{{ session['user_id'] }}">{{ session['username'] }}</a>
+                </li>
+                <li>
+                    <a href="/logout">Log Out</a>
+                </li>
+                {% else %}
+                <li>
+                    <a href="login">Log In</a>
+                </li>
+                {% endif %}
             </ul>
-            {% endif %}
-        {% endwith %}
         
-        
-        <main>
-            {% block main %}{% endblock %}
-        </main>
+        </nav>
+    </inner-column>
+</header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flash">
+        {% for category, message in messages %}
+            <li class=" {{ category }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+{% endwith %}
 
-        <footer>
 
-        </footer>
-        
+<main>
+    {% block main %}{% endblock %}
+</main>
 
-    </body>
+<footer>
+<inner-column>
+    <h1>Site made by Peter Chinman.</h1>
+    <p>This is an open source project. Check it out on GitHub</p>
+</inner-column>
+</footer>
+    
+
+</body>
 
 </html>

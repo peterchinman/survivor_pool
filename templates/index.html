@@ -6,22 +6,12 @@
 
 {% block main %}
 <section class="info" hx-boost="true">
-    <p>Easily make and manage betting pools for Surivor.</p>
-
-    <a href="/pool/create">Create a Pool</a>
-
+<inner-column>
+    <h1>Make and manage betting pools for Surivor.</h1>
+    <a href="{{ url_for('create_pool') }} class="loud-link">Create a Pool</a>
     <p>To start a pool, you'll need to make an account.</p>
-
     <p>Already made a pool? <a href="/login">Log in</a> to manage an existing pool.</p>
-
-    <a href="/pool/join">Join a Pool</a>
-
-    <p>To join a pool you'll need the <em>pool name</em> and the <em>pool password</em>.</p>
-
-</section>
-<section class="links" hx-boost="true">
-    <a href="/pool/create">Create a Pool</a>
-    <a href="/pool">Join a Pool</a>
+</inner-column>
 </section>
 
 </body>
