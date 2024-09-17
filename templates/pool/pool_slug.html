@@ -5,41 +5,46 @@
 {% endblock %}
 
 {% block main %}
-<div class="section">
-    <h1>{{ pool_slug }}</h1>
-</div>
-<div class="pool_table">
+<section class="pool">
+<inner-column>
+    <h1 class="loud-voice">{{ pool_slug }}</h1>
 
-    <table>
-       <!-- <thead>
-             <tr>
-                <th>User</th>
-                <th colspan="{{ num_picks }}">Picks</th>
-                <th>Points</th>
-            </tr> 
-        </thead>
-        -->
-        <tbody>
+    <ul class="pool_table">
+
+        {% if not row in rows %}
+        <li>No one has joined the pool yet!</li>
+        {% else %}
         {% for row in rows %}
-        <tr>
-            <td class="user_name">{{ row.user_name }}</td>
-            <td style="width: 10px;"></td>
-            {% for i in range(num_picks) %}
-            {% if row['voted_out_in_week' ~ i] > 0 %}
-            <td><img src="{{ row['pick' ~ i] }}" width="100" class="voted_out"></td>
-            {% else %}
-            <td><img src="{{ row['pick' ~ i] }}" width="100"></td>
-            {% endif %}
-            {% endfor %}
-            <td style="width: 10px;"></td>
-            <td class="rowpoints">{{ row.points }}</td>
-            
-            
-        </tr>
-    {% endfor %}
-        </tbody>
-    </table>
-    
-</div>
-</body>
+        <li>
+            <div class="pool-user-card">
+                <p class="name">{{ row.user_name }}</p>
+                <p class="points">{{ row.points }}</p>
+                <ul class="picks">
+                {% for i in range(num_picks) %}
+                    <!-- TODO this is a sloppy way of achieving this -->
+                    {% if 'left_show_in_episode' ~ i in row and row['left_show_in_episode' ~ i] > 0 %}
+                    <li>
+                        <picture>
+                            <img src="{{ row['image_path' ~ i] }}" alt="{{ row['name' ~ i] }}">
+                        </picture>
+                    </li>
+                    {% else %}
+                    <li>
+                        <picture>
+                            <img src="{{ row['image_path' ~ i] }}" alt="{{ row['name' ~ i] }}">
+                        </picture>
+                    </li>
+                    {% endif %}
+
+                {% endfor %}
+                </ul>
+            </div>
+        </li>
+        {% endfor %}
+        {% endif %}
+
+
+    </ul>
+</inner-column>
+</section>
 {% endblock %}

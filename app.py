@@ -500,9 +500,12 @@ def show_pool(pool_slug):
         # render template with pool login form?
 
         # get num_picks
-        num_picks = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)[0]["num_picks"]
-        current_week = 1 + int(db.execute("SELECT MAX(left_show_in_episode) from survivors")[0]['MAX(left_show_in_episode)'])
-
+        num_picks = db.execute("SELECT num_picks FROM pool WHERE pool_slug IS ?", pool_slug)[0]["num_picks"]
+        max_left_show = db.execute("SELECT MAX(left_show_in_episode) from contestant")[0]['MAX(left_show_in_episode)']
+        if max_left_show:
+            current_week = 1 + int(max_left_show)
+        else:
+            current_week = 1
 
         # First Get Rows of unique users from <pool_slug>
         
@@ -524,16 +527,17 @@ def show_pool(pool_slug):
 
             # now we iterate over each individual user's individual picks
             user_total_points = 0
+            # TODO sloppy beginner logic, update this
             for j in range(len(rows_of_picks)):
                 # rows_of_picks[j]['x'] x need to be the same as SELECT x from rows_of_picks
-                row[f'pick{j}'] = rows_of_picks[j]['image_path']
+                row[f'image_path{j}'] = rows_of_picks[j]['image_path']
+                row[f'name{j}'] = rows_of_picks[j]['name']
                 # below int conversion requires "or 0" in case of None
                 # thus surivors who haven't been voted out, have value 0
                 row[f'left_show_in_episode{j}'] = int(rows_of_picks[j]['left_show_in_episode'] or 0)
                 # implement POINTS and add it to each row  
                 weeks_survived = current_week if row[f'left_show_in_episode{j}'] == 0 else row[f'left_show_in_episode{j}']
-                # TODO: figure out best value for 2, should store this alongside pool_slug and type
-                # 2 is prob too strong. 
+                # TODO: change 2 to multipler value 
                 user_total_points += 2**(weeks_survived - 1)
             row['points'] = user_total_points 
 
