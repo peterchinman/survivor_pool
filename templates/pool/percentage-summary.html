@@ -1,0 +1,2 @@
+<p class="total {{ 'just-right' if total_percentage == 100 else ('too-high' if total_percentage > 100 else 'too-low') }}"><span id="total-percentage">{{ "%.0f"|format(total_percentage) }}</span>%</p>
+<p class="remaining"><span id="remaining-percentage">{{ "%.0f"|format(remaining_percentage) }}</span>% remaining</p>   

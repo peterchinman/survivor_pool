@@ -1,6 +1,7 @@
-cs50
-datetime
-Flask
-Flask-Session
-pytz
-requests
+cs50==9.3.4
+Flask==3.0.3
+MarkupSafe==2.1.5
+python-slugify==8.0.4
+pytz==2024.1
+Requests==2.32.3
+Werkzeug==3.0.4

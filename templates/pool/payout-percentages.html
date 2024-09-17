@@ -1,0 +1,24 @@
+
+<fieldset class="payout-breakdown">
+      <legend>Payout breakdown</legend>
+
+      {% for place in range(1, payout_places + 1) %}
+
+      <div class="place-percentage">
+         <label for="place-{{ place }}">
+               <span class="ordinal" data-place="{{ place }}"></span><span> Place: </span>
+         </label>
+         <div class="percentage-input">
+               <input type="number" name="place-{{ place }}" id="place-{{ place }}" min="0" max="{{ percentage_remaining }}" class="percentage" value="{{ percentage_dict.get(place, '') }}">
+               <span class="percent-sign">%</span>
+         </div>
+      </div>
+      
+      
+      {% endfor %}
+</fieldset>
+
+<div id="percentage-summary">
+      <p class="total"><span id="total-percentage">0</span>%</p>
+      <p class="remaining"><span id="remaining-percentage">100</span>% remaining</p>
+</div>

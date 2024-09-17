@@ -10,10 +10,11 @@
     <link href="/static/favicon.ico" rel="icon">
 
     <link href="/static/styles.css" rel="stylesheet">
-    <script src="https://unpkg.com/htmx.org@1.9.2"
-    integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/
-        bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h"
-    crossorigin="anonymous"></script>
+
+    <script src="https://unpkg.com/htmx.org@2.0.2" integrity="sha384-Y7hw+L/jvKeWIRRkqWYfPcvVxHzVzn5REgzbawhxAuQGwX1XWe70vji+VSeHOThJ" crossorigin="anonymous"></script>
+
+    <script src="{{ url_for('static', filename='utils.js') }}"></script>
+
 
     <title>{% block title %}{% endblock %}</title>
 
@@ -25,7 +26,7 @@
     <inner-column>
         <nav>
             <ul class="site-menu">
-                <li>
+                <li class="title">
                     <a href="/">Surivor Pool</a>
                 </li>
                 {% if session['username'] %}
@@ -63,7 +64,7 @@
 <footer>
 <inner-column>
     <h1>Site made by Peter Chinman.</h1>
-    <p>This is an open source project. Check it out on GitHub</p>
+    <p>This is an open source project. <a href="https://github.com/peterchinman/survivor_pool">Check it out on GitHub.</a></p>
 </inner-column>
 </footer>
     

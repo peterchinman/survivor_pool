@@ -20,9 +20,13 @@ erDiagram
     text pool_slug
     text password_hash
 
-    int num_picks
     text pool_type
-    intger dollar_buy_in
+    real multiplier
+    integer num_picks
+    real dollar_buy_in
+    int payout_places
+    
+
     integer season
    }
    user }|--|{ user_pool_map : ""

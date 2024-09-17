@@ -6,18 +6,71 @@
 
 {% block main %}
     <form action="/pool/create" method="post">
-        <div>
-            <input autocomplete="off" autofocus name="pool_name" placeholder="Pool Name" type="text" required>
-            <label for="pool_name">Choose a name for your Survivor Pool</label>
+
+        <label for="pool_name">Choose a name for your pool</label>
+        <input autocomplete="off" autofocus name="pool_name" id="pool_name" placeholder="Pool Name" type="text" required>
+        
+    
+        <label for="password">Choose a Password for your pool</label>
+        <input name="password" id="password" placeholder="Password" type="password" aria-describedby="password-more">
+        <span class="sublabel" id="password-more">Users will use this password to join the pool. Alternatively you'll be able to send them a custom link to join.</span>
+            
+        <label for="confirmation">Confirm password</label>
+        <input name="confirmation" id="confirmation" placeholder="Confirm Password" type="password">
+
+        <fieldset hx-get="/check-pool-type" hx-target="#multiplier-field" hx-trigger="change" hx-include="[name='pool_type']" class="radio">
+            <legend>Choose pool type</legend>
+
+            {% for pool_type in pool_types.values() %}
+            <div class="radio-option">
+                <div class="input-and-label">
+                    <input type="radio" id="{{ pool_type['name'] }}" name="pool_type" value="{{ pool_type['name'] }}" aria-describedby="pool-type-more"/>
+                    <label for="{{ pool_type['name'] }}">{{ pool_type['display'] }}</label>
+                </div>
+                <span class="sublabel" id="pool-type-more">{{ pool_type['description'] }}</span>
+            </div>
+            {% endfor %}
+        </fieldset>
+
+        <div id="multiplier-field">
+            <!-- HTMX will replace this div's content based on the response -->
         </div>
-        <div>
-            <input name="password" placeholder="Password" type="password">
-            <label for="password">Choose a Password for your pool. Other users will use this to join the pool. Alternatively you'll be able to send them a custom link.</label>
-        </div>
-        <div>
-            <input name="confirmation" placeholder="Password Confirmation" type="password">
-            <label for="confirmation">Confirm password</label>
-        </div>
+
+        <label for="num_picks">Choose how many Survivors each participant will pick</label>
+        <input autocomplete="off" name="num_picks" id="num_picks" type="number", min="0", max="18" value="3">
+
+        <label for="dollar_buy_in">Pool buy-in amount</label>
+        <input autocomplete="off" name="dollar_buy_in" id="dollar_buy_in" placeholder="$$$" type="number" min="0">
+        <span class="sublabel" id="dollar-buy-in-more">This is the buy-in amount for each pool participant. This number can represent anything: doll-hairs, buttons, etc. You'll be responsible for collecting whatever this amount represents.</span>
+
+        <fieldset class="payouts">
+            <!-- <legend>Payouts</legend> -->
+            <div class="payout-places">
+                <label for="payout_places">Payout how many places?</label>
+                <input type="number" name="payout_places" id="payout_places" value="1" min="1" max="10" hx-get="/payout-places" hx-target="#payout-percentages" hx-trigger="load, change" hx-include=".percentage">
+            </div>
+
+            <div id="payout-percentages" hx-trigger="input delay:500ms, payout-places-updated from:body" hx-get="/calculate-percentages" hx-target="#percentage-summary" hx-include=".percentage">
+            </div>
+
+            <script>
+                function updateOrdinals() {
+                    const ordinalElements = document.querySelectorAll('.ordinal');
+                    ordinalElements.forEach(element => {
+                        const place = parseInt(element.getAttribute('data-place'));
+                        element.textContent = ordinal_suffix_of(place);
+                    });
+                }
+            
+                // Run on initial page load
+                document.addEventListener('DOMContentLoaded', updateOrdinals);
+            
+                // Run when HTMX swaps in new content
+                document.body.addEventListener('htmx:afterSwap', updateOrdinals);
+                </script>
+        </fieldset>
+
+    
         <button type="submit">Create Pool</button>
     </form>
 {% endblock %}

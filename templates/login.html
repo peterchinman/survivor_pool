@@ -5,16 +5,21 @@
 {% endblock %}
 
 {% block main %}
-    <a href="{{ url_for('create_account') }}" class ="loud-voice">Create an Account</a>
-    <p>or</p>
-    <h1 class="loud-voice"></h1>
+<section class="login">
+<inner-column>
+   
     <form action="{{ url_for('login', next=request.args.get('next')) }}" method="post">
         <!-- TODO client side verification of this form -->
         <label for="email">Email Address</label>
-        <input autocomplete="off" autofocus name="email" placeholder="name@email.com" type="text">
-
-        <input name="password" placeholder="Password" type="password">
-     
+        <input autocomplete="off" autofocus name="email" id="email" placeholder="Enter your email address" type="email" required>
+        <label for="password">Password</label>
+        <input name="password" id="password" placeholder="Password" type="password" required>
+    
         <button type="submit">Log In</button>
     </form>
+
+     <!-- TODO pass 'next' on to create_account() -->
+    <p class="form-message">Don't have an account yet? <a href="{{ url_for('create_account', next=request.args.get('next')) }}">Create one.</a></p>
+</inner-column>
+</section>
 {% endblock %}

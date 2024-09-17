@@ -299,6 +299,20 @@ def logout():
 
     return redirect("/")
 
+ # TODO this should maybe be a list of dicts with keys as html name and values as html dispay?
+pool_types = {
+    "points" : {
+        "name" : "points",
+        "display" : "Points",
+        "description" : "Whoever has the most points in the end wins. Each survivor starts with 1 point. Each episode they survive their point value is multiplied by the points multiplier.",
+    },
+    "sole survivor" : {
+        "name" : "sole survivor",
+        "display" : "Sole Survivor",
+        "description" : "Whoever chooses the sole survivor wins. If no one picks the sole survivor, or in the event of the tie, whoever chooses the survivor to survive the longest wins."
+    }
+}
+
 @app.route("/pool/create", methods=["GET", "POST"])
 @login_required
 def create_pool():
@@ -310,13 +324,52 @@ def create_pool():
         pool_name = request.form.get("pool_name")
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
+        pool_type = request.form.get("pool_type")
+        multiplier = request.form.get("multiplier")
+        num_picks = int(request.form.get("num_picks"))
+        dollar_buy_in = int(request.form.get("dollar_buy_in"))
+        payout_places = request.form.get("payout_places")
 
+        percentage_dict = {}
+
+        for key, value in request.args.items():
+            if key.startswith('place-'):
+                place_number = int(key.split('-')[1])
+                percentage_dict[place_number] = value
+
+        
         if not pool_name:
             return apology("You must include Pool Name", 422)
         if not password:
             return apology("You must include Password", 422)
         if not confirmation:
             return apology("You must include Confirmation", 422)
+        if not pool_type:
+            return apology("Choose a pool type", 422)
+        if pool_type not in pool_types:
+            return apology("Incorrect pool type", 422)
+        if pool_type == 'points' and not 1 <= multiplier <= 5:
+            return apology("Incorrect multiplier", 422)
+        if not num_picks:
+            return apology("Must choose number of Survivor picks", 422)
+        if num_picks <=0 or num_picks >=18:
+            return apology("Invalid number of Survivor picks", 422)
+        if dollar_buy_in < 0:
+            return apology("Pool dollar amount can not be negative", 422)
+        if payout_places < 1 or payout_places > 10:
+            return apology("Payout places must be between 1 and 10", 422)
+        if len(percentage_dict) != payout_places:
+            return apology("Mismatch between number of payout_places and percentages listed", 422)
+        
+        total_percentage = 0
+        for key, value in percentage_dict.items():
+            try:
+                total_percentage += float(value)
+            except ValueError:
+                pass
+        
+        if total_percentage != 100:
+            return apology("Percentages must add up to 100%", 422)
 
         
         # check and sanitize pool_name
@@ -346,7 +399,7 @@ def create_pool():
             else:
                 current_season = 1
             # insert into pool
-            pool_id = db.execute("INSERT INTO pool (password_hash, pool_name, pool_slug, season) VALUES(?, ?, ?, ?)", hash, pool_name, sanitized_pool_slug, current_season)
+            pool_id = db.execute("INSERT INTO pool (password_hash, pool_name, pool_slug, season, num_picks, pool_type, dollar_buy_in) VALUES(?, ?, ?, ?, ?, ?, ?)", hash, pool_name, sanitized_pool_slug, current_season, num_picks, pool_type, dollar_buy_in)
             # insert into user_pool_map
             db.execute("INSERT INTO user_pool_map (user_id, pool_id, is_admin) VALUES (?, ?, ?)", session["user_id"], pool_id, 1)
     
@@ -361,8 +414,47 @@ def create_pool():
         return redirect(url_for('pool_admin', pool_slug = sanitized_pool_slug))
 
     if request.method == "GET":
-        return render_template("pool/create.html")
+        return render_template("pool/create.html", pool_types=pool_types)
+    
+@app.route('/check-pool-type', methods=["GET"])
+def check_pool_type():
+    pool_type = request.args.get("pool_type")
+    print(f"Received pool_type: {pool_type}")  # Debugging log
+    if pool_type == "points":
+        return render_template("pool/multiplier_field.html")
+    else:
+        return ""  # Return nothing if the pool type is not "points"
 
+@app.route('/payout-places', methods=["GET"])
+def payout_places():
+    payout_places = request.args.get("payout-places", type=int)
+
+    percentage_dict = {}
+
+    for key, value in request.args.items():
+         if key.startswith('place-'):
+            place_number = int(key.split('-')[1])
+            percentage_dict[place_number] = value
+             
+    response = make_response(render_template("pool/payout-percentages.html", payout_places=payout_places, percentage_dict=percentage_dict)) 
+    response.headers['HX-Trigger-After-Settle'] = 'payout-places-updated'
+    return response
+
+@app.route('/calculate-percentages', methods=['GET'])
+def calculate_percentages():
+    total_percentage = 0
+    for key, value in request.args.items():
+         if key.startswith('place-'):
+            try:
+                total_percentage += float(value)
+            except ValueError:
+                pass  # Ignore non-numeric inputs
+    
+    remaining_percentage = 100 - total_percentage
+    
+    return render_template('pool/percentage-summary.html', 
+                           total_percentage=total_percentage,
+                           remaining_percentage=remaining_percentage)
 
 # TODO these probably shouldn't be floating in the global
 
@@ -438,6 +530,8 @@ def show_pool(pool_slug):
 
 
 
+
+
 @app.route('/pool/<pool_slug>/admin', methods=["GET", "POST"])
 @login_required
 def pool_admin(pool_slug):
@@ -445,7 +539,7 @@ def pool_admin(pool_slug):
 
     is_admin_row = db.execute("SELECT is_admin FROM user_pool_map WHERE user_id = ? AND pool_id = (SELECT id FROM pool WHERE pool_slug = ?)", session["user_id"], pool_slug)
     if is_admin_row:
-        is_admin = result[0]["is_admin"]
+        is_admin = is_admin_row[0]["is_admin"]
     else:
         is_admin = None
     if not is_admin:
@@ -454,8 +548,7 @@ def pool_admin(pool_slug):
 
     if request.method == "GET":
 
-        # TODO this should maybe be a list of dicts with keys as html name and values as html dispay?
-        pool_types = ['points', 'sole survivor']
+       
 
         row = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)[0]
         return render_template("pool/admin.html", pool_types=pool_types, row=row, pool_slug=pool_slug)

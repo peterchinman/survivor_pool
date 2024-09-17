@@ -22,20 +22,324 @@
 
 body {
 	background-color: var(--bg-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex-grow: 2;
 }
 
 inner-column {
     max-width: 700px;
     margin-inline: auto;
-}
-
-.flash {
-    
+    padding-inline: 12px;
 }
 
 header{
+    padding-block: 2rem;
     .site-menu{
         display: flex;
         justify-content: space-between;
+        align-items: baseline;
+
+        .title {
+            /* font-size: 2rem; */
+        }
     }
 }
+
+.flash {
+    li{
+        display: flex;
+        justify-content: center;
+    }
+    .error, .warning {
+        background-color: #FF8686;
+    }
+}
+
+
+/* HOME PAGE */
+
+.info {
+    line-height: 1.4
+}
+
+/* FORMS */
+
+form{
+    font-family: serif;
+    max-width: 400px;
+    margin: 0 auto; 
+    padding: 20px;
+    /* background-color: #f9f9f9; */
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    margin-bottom: 3rem;
+
+    label {
+        margin-bottom: .5rem;
+        display: block;
+    }
+
+    .sublabel {
+        color: var(--neutral-700);
+        font-size: .8rem;
+        margin-bottom: 1rem;
+        display: block;
+        margin-inline: .2rem;
+    }
+
+    input[type="email"], input[type="password"], input[type="text"] {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 1rem;
+        display: inline-block;
+        border: 1px solid var(--neutral-200);
+        border-radius: 4px;
+    }
+
+    input[type="number"] {
+        padding: 12px;
+        margin-bottom: 1rem;
+        display: inline-block;
+        border: 1px solid var(--neutral-200);
+        border-radius: 4px;
+    }
+
+    .payouts {
+        border: 1px solid var(--neutral-200);
+        padding: 1rem;
+        margin-block: 2rem;
+
+        input[type="number"] {
+            text-align: right;
+            width: 60px;
+            margin-bottom: 0;
+            padding: 6px;
+        }
+
+        .payout-places {
+            display: flex;
+            justify-content: space-between;
+            align-items: last baseline;
+            margin-right: 1rem;
+            gap: 1rem;
+        }
+
+        .payout-breakdown {
+            margin-top: 1rem;
+            padding-top: .5rem;
+            
+            legend {
+                font-weight: 600;
+            }
+        }
+
+        .place-percentage {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: .5rem;
+            padding-block: 6px;
+            border-bottom: 1px solid var(--neutral-200);
+
+            .percent-sign {
+                color: var(--neutral-500);
+                min-width: 1rem;
+                max-width: 1rem;
+            }
+        }
+        #percentage-summary {
+            .total {
+                text-align: right;
+                margin-right: 1.3rem;
+                margin-top: 1rem;
+            }
+            .too-high {
+                border: 2px solid red;
+            }
+            .too-low {
+                color: blue;
+            }
+            .just-right {
+                color: green;
+            }
+            .remaining {
+                color: var(--neutral-500);
+                font-size: .8rem;
+                text-align: right;
+                margin-top: 0rem;
+            }
+        }
+    }
+
+
+    .radio {
+
+        border: none;
+        margin: 10px 0;
+
+        legend {
+            margin-bottom: .5rem;
+        }
+
+        .radio-option {
+            display: flex;
+            flex-direction: column;
+            gap: .3rem;
+
+            .input-and-label{
+                display: flex;
+                gap: .3rem;
+            }
+        }
+
+        .radio-option + .radio-option{
+            padding-top: 1rem;
+        }
+
+        .radio-option:last-child{
+            padding-bottom: 1rem;
+        }
+
+        input[type="radio"] {
+            display: inline;
+            width: initial;
+        }
+        label {
+            display: inline;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        .sublabel {
+            color: var(--neutral-700);
+            font-size: .8rem;
+            margin-bottom: 0rem;
+            display: block;
+            margin-inline: 1.6rem;
+        }
+    }
+
+    #multiplier-field {
+        margin-left: 1.6rem;
+    }
+
+    input:has(+ .sublabel) {
+        margin-bottom: .5rem;
+    }
+
+    button {
+        width: 100%;
+        background-color: #28a745;
+        color: white;
+        padding: 12px;
+        margin-top: 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    button:hover {
+        background-color: #218838;
+    }
+
+    input.error {
+        border-color: #e74c3c; /* Red for error */
+    }
+    
+    input.success {
+        border-color: #2ecc71; /* Green for success */
+    }
+    
+    .error-message {
+        color: #e74c3c;
+        font-size: 14px;
+    }
+
+    input::placeholder {
+        color: #999;
+    }
+
+    @media screen and (max-width: 600px) {
+        form {
+            padding: 10px;
+        }
+    
+        input {
+            padding: 10px;
+            font-size: 14px;
+        }
+    
+        button {
+            padding: 10px;
+        }
+    }
+
+}
+
+.form-message {
+    padding-top: 1rem;
+    max-width: 400px; /* Limit form width for readability */
+    margin: 0 auto; /* Center the form */
+}
+/* TYPOGRAPHY */
+
+.loud-link {
+    font-size: 2rem;
+}
+
+.calm-voice, p, li {
+	font-family: serif;
+	font-size: 1rem;
+	line-height: 1.4;
+}
+
+.strong-voice {
+	font-family: sans-serif;
+	font-size: 24px;
+}
+
+.attention-voice {
+	font-family: sans-serif;
+	font-size: 30px;
+}
+
+.loud-voice {
+	font-family: sans-serif;
+	font-size: clamp(36px, 5vw, 60px);
+}
+
+@media (min-width: 600px) {
+	.loud-voice {
+		font-weight: 700; /* or variable font */
+	}
+}
+
+:is(.calm-voice, p) em {
+	font-style: italic;
+}
+
+:is(.calm-voice, p) strong {
+	font-weight: 700;
+}
+
+p + p {
+	margin-top: 1em;
+}
+
+h2 + p {
+	margin-top: 20px;
+}
+
+code {
+	font-family: monospace;
+	font-size: 1.1em;
+	color: green;
+}
+
+
+
