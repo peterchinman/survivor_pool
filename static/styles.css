@@ -47,6 +47,11 @@ header{
         .title {
             /* font-size: 2rem; */
         }
+
+        .link-list {
+            display: flex;
+            gap: 2rem;
+        }
     }
 }
 

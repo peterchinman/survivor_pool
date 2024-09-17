@@ -25,7 +25,8 @@ erDiagram
     integer num_picks
     real dollar_buy_in
     int payout_places
-    
+    text payout_dict
+
 
     integer season
    }

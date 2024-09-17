@@ -20,18 +20,19 @@
 
 </head>
 
-<body class="body">
+<body>
 
-<header class="section">
+<header>
     <inner-column>
-        <nav>
-            <ul class="site-menu">
-                <li class="title">
-                    <a href="/">Surivor Pool</a>
-                </li>
-                {% if session['username'] %}
+        <nav class="site-menu">
+            
+            <div class="title">
+                <a href="/">Surivor Pool</a>
+            </div>
+            <ul class="link-list">
+            {% if session['user_name'] %}
                 <li>
-                    <a href="/user/{{ session['user_id'] }}">{{ session['username'] }}</a>
+                    <a href="/user/{{ session['user_id'] }}">{{ session['user_name'] }}</a>
                 </li>
                 <li>
                     <a href="/logout">Log Out</a>
@@ -40,8 +41,9 @@
                 <li>
                     <a href="login">Log In</a>
                 </li>
-                {% endif %}
+            {% endif %}
             </ul>
+                
         
         </nav>
     </inner-column>

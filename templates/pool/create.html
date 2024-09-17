@@ -18,6 +18,7 @@
         <label for="confirmation">Confirm password</label>
         <input name="confirmation" id="confirmation" placeholder="Confirm Password" type="password">
 
+        <!-- TODO htmx doesn't automatically reload sometimes  -->
         <fieldset hx-get="/check-pool-type" hx-target="#multiplier-field" hx-trigger="change" hx-include="[name='pool_type']" class="radio">
             <legend>Choose pool type</legend>
 
@@ -38,6 +39,8 @@
 
         <label for="num_picks">Choose how many Survivors each participant will pick</label>
         <input autocomplete="off" name="num_picks" id="num_picks" type="number", min="0", max="18" value="3">
+
+        <!-- TODO mark the below as not required / optional -->
 
         <label for="dollar_buy_in">Pool buy-in amount</label>
         <input autocomplete="off" name="dollar_buy_in" id="dollar_buy_in" placeholder="$$$" type="number" min="0">

@@ -1,5 +1,6 @@
 import os
 import re
+import json
 
 from cs50 import SQL
 from datetime import datetime, timedelta
@@ -80,9 +81,12 @@ def init_db():
             pool_name TEXT NOT NULL,
             pool_slug TEXT NOT NULL,
             password_hash TEXT NOT NULL,
-            num_picks INTEGER,
-            pool_type TEXT,
-            dollay_buy_in NUMERIC,
+            pool_type TEXT NOT NULL,
+            multiplier NUMERIC,
+            num_picks INTEGER NOT NULL,
+            dollar_buy_in NUMERIC,
+            payout_places INTEGER,
+            payout_json TEXT,
             season INTEGER NOT NULL
         )
     """):
@@ -122,13 +126,15 @@ def init_db():
         error = True
 
     if not error:
-        flash("Tables successfully created")
+        flash("Tables successfully created", "message")
     return redirect(url_for('index'))
     
 @app.route("/test_admin", methods=["GET"])
 def test_admin():
     password_hash = generate_password_hash("ZXasdqwe123")
-    db.execute("INSERT INTO user (name, email, password_hash, is_site_admin) VALUES (?, ?, ?, ?)", "Peter", "peter.chinman@gmail.com", password_hash, 1)
+    user_id = db.execute("INSERT INTO user (name, email, password_hash, is_site_admin) VALUES (?, ?, ?, ?)", "Peter", "peter.chinman@gmail.com", password_hash, 1)
+    session["user_id"] = user_id
+    session["user_name"] = "Peter"
     flash("Admin user successfully added", "message")
     return redirect(url_for('index'))
 
@@ -199,6 +205,7 @@ def login():
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
+        session["user_name"] = rows[0]["name"]
 
         # TODO will this work? is it bool or string?
         is_site_admin = rows[0]["is_site_admin"]
@@ -219,7 +226,7 @@ def login():
 @app.route("/create-account", methods=["GET", "POST"])
 def create_account():
     if request.method == "POST":
-        name = request.form.get("name", "").strip()
+        name = request.form.get("name")
         email = request.form.get("email")
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
@@ -257,14 +264,14 @@ def create_account():
             user_id = db.execute("INSERT INTO user (name, email, password_hash, is_site_admin) VALUES (?, ?, ?, ?)", name, email, password_hash, 0)
             if user_id:
                 flash("User successfully added!", "message")
+
                 session["user_id"] = user_id
+                session["user_name"] = name
+                
                 # TODO set up this redirect to get us back to page we wanted to be at
-                return redirect(url_for('user', user_id=user_id))
+                return redirect(url_for('index'))
             else:
                 flash("Error adding user to database!", "error")
-                
-        
-
 
 
     if request.method == "GET":
@@ -325,17 +332,27 @@ def create_pool():
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
         pool_type = request.form.get("pool_type")
-        multiplier = request.form.get("multiplier")
+        multiplier = int(request.form.get("multiplier", 0))
         num_picks = int(request.form.get("num_picks"))
-        dollar_buy_in = int(request.form.get("dollar_buy_in"))
-        payout_places = request.form.get("payout_places")
+        dollar_buy_in = int(request.form.get("dollar_buy_in", 0))
+        payout_places = int(request.form.get("payout_places", 0))
 
-        percentage_dict = {}
+        payout_dict = {}
+        total_percentage = 0
 
-        for key, value in request.args.items():
+        for key, value in request.form.items():
             if key.startswith('place-'):
                 place_number = int(key.split('-')[1])
-                percentage_dict[place_number] = value
+                payout_dict[place_number] = value
+                try:
+                    total_percentage += float(value)
+                except ValueError:
+                    pass
+        
+        if payout_dict and total_percentage != 100:
+            return apology("Percentages must add up to 100%", 422)
+
+        payout_json = json.dumps(payout_dict)
 
         
         if not pool_name:
@@ -348,33 +365,26 @@ def create_pool():
             return apology("Choose a pool type", 422)
         if pool_type not in pool_types:
             return apology("Incorrect pool type", 422)
+        if pool_type == 'points' and not multiplier:
+            return apology("Multiplier required", 422)
         if pool_type == 'points' and not 1 <= multiplier <= 5:
-            return apology("Incorrect multiplier", 422)
+            return apology("Multiplier must be between 1 and 5", 422)
         if not num_picks:
             return apology("Must choose number of Survivor picks", 422)
         if num_picks <=0 or num_picks >=18:
             return apology("Invalid number of Survivor picks", 422)
         if dollar_buy_in < 0:
             return apology("Pool dollar amount can not be negative", 422)
-        if payout_places < 1 or payout_places > 10:
+        if payout_places < 0 or payout_places > 10:
             return apology("Payout places must be between 1 and 10", 422)
-        if len(percentage_dict) != payout_places:
+        if len(payout_dict) != payout_places:
             return apology("Mismatch between number of payout_places and percentages listed", 422)
-        
-        total_percentage = 0
-        for key, value in percentage_dict.items():
-            try:
-                total_percentage += float(value)
-            except ValueError:
-                pass
-        
-        if total_percentage != 100:
-            return apology("Percentages must add up to 100%", 422)
 
         
         # check and sanitize pool_name
 
-        # convert pool_name to pool_slug
+        # escape and slugify
+        pool_name = escape(pool_name)
         pool_slug = slugify(pool_name)
 
         if not is_valid_subdirectory_name(pool_slug):
@@ -390,18 +400,24 @@ def create_pool():
         if password == confirmation:
 
             # hash password
-            hash = generate_password_hash(password)
+            password_hash = generate_password_hash(password)
             # get current season
             # implemented this if else workaround for testing
             row = db.execute("SELECT current_season FROM settings")
             if row:
-                current_season = row[0]["current_season"]
+                season = row[0]["current_season"]
             else:
-                current_season = 1
+                season = 0
+
             # insert into pool
-            pool_id = db.execute("INSERT INTO pool (password_hash, pool_name, pool_slug, season, num_picks, pool_type, dollar_buy_in) VALUES(?, ?, ?, ?, ?, ?, ?)", hash, pool_name, sanitized_pool_slug, current_season, num_picks, pool_type, dollar_buy_in)
-            # insert into user_pool_map
+
+            pool_id = db.execute("INSERT INTO pool (pool_name, pool_slug, password_hash, pool_type, multiplier, num_picks, dollar_buy_in, payout_places, payout_json, season) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", pool_name, pool_slug, password_hash, pool_type, multiplier, num_picks, dollar_buy_in, payout_places, payout_json, season)
+            # insert into user_pool_map with is_admin set to true
             db.execute("INSERT INTO user_pool_map (user_id, pool_id, is_admin) VALUES (?, ?, ?)", session["user_id"], pool_id, 1)
+
+            # TODO is this the right re-direct? or separate <pool>/setup page? how to check if pool has been properly setup?
+            flash("Pool successfully created", "message")
+            return redirect(url_for('pool_admin', pool_slug=pool_slug))
     
             
 
@@ -410,8 +426,7 @@ def create_pool():
         else:
             return apology("password and confirmation do not match", 422)
     
-        # TODO is this the right re-direct? or separate <pool>/setup page? how to check if pool has been properly setup?
-        return redirect(url_for('pool_admin', pool_slug = sanitized_pool_slug))
+        
 
     if request.method == "GET":
         return render_template("pool/create.html", pool_types=pool_types)
@@ -427,7 +442,7 @@ def check_pool_type():
 
 @app.route('/payout-places', methods=["GET"])
 def payout_places():
-    payout_places = request.args.get("payout-places", type=int)
+    payout_places = request.args.get("payout_places", type=int)
 
     percentage_dict = {}
 

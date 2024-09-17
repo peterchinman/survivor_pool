@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Create Account
+{% endblock %}
+
+{% block main %}
+<section class="create-account">
+<inner-column>
+   <!-- TODO make sure next is passed correctly -->
+    <form action="{{ url_for('create_account', next=request.args.get('next')) }}" method="post">
+        <label for="email">Email Address</label>
+        <input autocomplete="off" autofocus name="email" id="email" placeholder="Enter your email address" type="email" required>
+
+        <label for="password">Password</label>
+        <input name="password" id="password" placeholder="Password" type="password" required>
+
+        <label for="confirmation">Confirm password</label>
+        <input name="confirmation" id="confirmation" placeholder="Confirm Password" type="password" required>
+
+        <label for="name">Name</label>
+        <input name="name" id="name" type="text" required aria-describedby="name-more" minlength="2" maxlength="20" placeholder="Your display name" required>
+        <span id="name-more" class="sublabel">This is the name that will be displayed in your pools. This can be changed later from your user page.</span>
+
+        <button type="submit">Create Account</button>
+    </form>
+</inner-column>
+</section>
+{% endblock %}
