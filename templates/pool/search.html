@@ -1,0 +1,7 @@
+{% for pool in pools %}
+
+<li class="pool">
+   <a href="{{ url_for('show_pool', pool_slug=pool.pool_slug) }}">{{ pool.pool_name }}</a>
+</li>
+
+{% endfor %}

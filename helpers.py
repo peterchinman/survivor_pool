@@ -5,9 +5,12 @@ import requests
 import urllib
 import uuid
 
+from cs50 import SQL
 from flask import flash, make_response, redirect, render_template, request, session, url_for
 from functools import wraps
 from urllib.parse import urlparse
+
+db = SQL("sqlite:///survivor.db")
 
 
 def apology(message, code=400):
@@ -36,12 +39,6 @@ def apology(message, code=400):
 
 
 def login_required(f):
-    """
-    Decorate routes to require login.
-
-    https://flask.palletsprojects.com/en/latest/patterns/viewdecorators/
-    """
-
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if session.get("user_id") is None:
@@ -50,13 +47,26 @@ def login_required(f):
 
     return decorated_function
 
-def admin_required(f):
+def pool_admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # TODO does this work, bool or string?
+        pool_slug = kwargs.get('pool_slug')
+        pool_id = db.execute("SELECT id FROM pool WHERE pool_slug = ?", pool_slug)[0]["id"]
+
+        if not session.get("user_id"):
+            return redirect(url_for('login'))
+
+        if pool_id not in session.get("pools", {}) or not session["pools"][pool_id]["is_admin"]:
+            return "Unauthorized", 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+def site_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
         if session.get("is_site_admin") != True:
             flash("You do not have permission to access the admin panel.", "error")
-            return make_response(redirect(url_for('login')), 403)
+            return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 

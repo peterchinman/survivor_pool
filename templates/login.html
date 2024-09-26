@@ -7,6 +7,14 @@
 {% block main %}
 <section class="login">
 <inner-column>
+
+    {% if next == "create_pool" %}
+
+    <p class="form-message strong-voice">To create a pool, you'll need to log in or create an account.</p>
+
+    {% endif %}
+
+
    
     <form action="{{ url_for('login', next=request.args.get('next')) }}" method="post">
         <!-- TODO client side verification of this form -->
@@ -18,8 +26,7 @@
         <button type="submit">Log In</button>
     </form>
 
-     <!-- TODO pass 'next' on to create_account() -->
-    <p class="form-message">Don't have an account yet? <a href="{{ url_for('create_account', next=request.args.get('next')) }}">Create one.</a></p>
+    <p class="form-message strong-voice">Don't have an account yet? <a href="{{ url_for('create_account', next=next) }}">Create one.</a></p>
 </inner-column>
 </section>
 {% endblock %}

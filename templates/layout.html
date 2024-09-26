@@ -35,11 +35,11 @@
                     <a href="/user/{{ session['user_id'] }}">{{ session['user_name'] }}</a>
                 </li>
                 <li>
-                    <a href="/logout">Log Out</a>
+                    <a href="{{ url_for('logout') }}">Log Out</a>
                 </li>
                 {% else %}
                 <li>
-                    <a href="login">Log In</a>
+                    <a href="{{ url_for('login') }}">Log In</a>
                 </li>
             {% endif %}
             </ul>
@@ -59,14 +59,13 @@
 {% endwith %}
 
 
-<main>
+<main class="{% block main_class %}{% endblock %}" hx-boost="true">
     {% block main %}{% endblock %}
 </main>
 
 <footer>
 <inner-column>
-    <p>Site made by Peter Chinman.</p>
-    <p>This is an open source project. <a href="https://github.com/peterchinman/survivor_pool">Check it out on GitHub.</a></p>
+    <p>Site made by <a href="http://peterchinman.com/">Peter Chinman</a></p>
 </inner-column>
 </footer>
     

@@ -7,40 +7,55 @@
 {% block main %}
 <section class="pool">
 <inner-column>
-    <h1 class="loud-voice">{{ pool_slug }}</h1>
+    <ul class="pool-nav">
+        <li>
+            <h1 class="attention-voice">{{ pool_data.pool_name }}</h1>
+        </li>
+        {% if session.get('pools') and session['pools'].get(pool_data["id"], {}).get("is_admin", False) == True %}
+
+        <li>
+            <a href="{{ url_for('pool_admin', pool_slug=pool_slug) }}">Pool Admin</a>
+        </li>
+        {% endif %}
+        <li class="join-pool">
+            <a href="{{ url_for('join_pool', pool_slug=pool_slug) }}">Join pool</a>
+        </li>
+    </ul>
 
     <ul class="pool_table">
 
-        {% if not row in rows %}
-        <li>No one has joined the pool yet!</li>
-        {% else %}
-        {% for row in rows %}
-        <li>
-            <div class="pool-user-card">
-                <p class="name">{{ row.user_name }}</p>
-                <p class="points">{{ row.points }}</p>
-                <ul class="picks">
-                {% for i in range(num_picks) %}
-                    <!-- TODO this is a sloppy way of achieving this -->
-                    {% if 'left_show_in_episode' ~ i in row and row['left_show_in_episode' ~ i] > 0 %}
-                    <li>
-                        <picture>
-                            <img src="{{ row['image_path' ~ i] }}" alt="{{ row['name' ~ i] }}">
-                        </picture>
-                    </li>
-                    {% else %}
-                    <li>
-                        <picture>
-                            <img src="{{ row['image_path' ~ i] }}" alt="{{ row['name' ~ i] }}">
-                        </picture>
-                    </li>
-                    {% endif %}
+        {% if rows %}
+            {% for row in rows %}
+            <li>
+                <div class="pool-user-card">
+                    <text-content>
+                        <p class="name">{{ row.name }}</p>
+                        <p class="points">{{ row.points }}</p>
+                    </text-content>
+                    <ul class="picks">
+                    {% for i in range(pool_data.num_picks) %}
+                        <!-- TODO this is a sloppy way of achieving this -->
+                        {% if 'left_show_in_episode' ~ i in row and row['left_show_in_episode' ~ i] > 0 %}
+                        <li>
+                            <picture>
+                                <img src="/{{ row['image_path' ~ i] }}" alt="{{ row['name' ~ i] }}" class="voted-out">
+                            </picture>
+                        </li>
+                        {% else %}
+                        <li>
+                            <picture>
+                                <img src="/{{ row['image_path' ~ i] }}" alt="{{ row['name' ~ i] }}">
+                            </picture>
+                        </li>
+                        {% endif %}
 
-                {% endfor %}
-                </ul>
-            </div>
-        </li>
-        {% endfor %}
+                    {% endfor %}
+                    </ul>
+                </div>
+            </li>
+            {% endfor %}
+        {% else %}
+        <li>No one has joined the pool yet!</li>
         {% endif %}
 
 

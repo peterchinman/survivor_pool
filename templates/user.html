@@ -5,17 +5,37 @@
 {% endblock %}
 
 {% block main %}
-<h1>{{ user.name }}</h1>
+<section class="user-panel">
+<inner-column>
+   <h1 class="attention-voice">Welcome, {{ user.name }}</h1>
 
-<ul>
+   {% if pools[0] is defined %}
+   <p>Your pools:</p>
+   {# We need to set this namesapce because assignments in loops are cleared at the end of iteration #}
+   {% set ps = namespace(previous_season = None) %}
    {% for pool in pools %}
-   <li class="pool-list">
-      <a href="/pool/{{ pool.pool_slug }}">{{ pool.pool_name }}</a>
-      <!-- TODO check if this jinja is working right, should it be a bool or as string? -->
-      {% if pool.is_admin == True %}
-         <a href="/pool/{{ pool.pool_slug }}/admin">admin</a>
+      {% if pool.season != ps.previous_season %}
+         {% if ps.previous_season is not none %}
+            </ul> <!-- Close the previous list -->
+         {% endif %}
+         <h3>Season {{ pool.season }}</h3>
+         <ul class="pool-list">
+         {% set ps.previous_season = pool.season %}
       {% endif %}
-   </li>
+      <li class="pool-item">
+         <a href="/pool/{{ pool.pool_slug }}">{{ pool.pool_name }}</a>
+         {% if pool.is_admin == True %}
+         <p class="admin">(<a href="/pool/{{ pool.pool_slug }}/admin">admin</a>)</p>
+         {% endif %}
+      </li>
+      {% if loop.last %}
+         </ul>
+      {% endif %}
    {% endfor %}
-</ul>
+
+   {% else %}
+   <p>No pools found.</p>
+   {% endif %}
+</inner-column>
+</section>
 {% endblock %}

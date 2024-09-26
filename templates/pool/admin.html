@@ -1,34 +1,26 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    SET UP {{ pool_slug }}
+    {{ pool_slug }} Admin
 {% endblock %}
 
 {% block main %}
-    <h1> set up {{ pool_slug }}</h1>
-    <form action="{{ url_for('pool_admin', pool_slug=pool_slug) }}" method="post">
-        {% if row['pool_type'] is not defined or not row['pool_type'] %}
-        <div>
-            <label for="pool_password">Choose a password for {{pool_slug}} pool</label>
-            <input autocomplete="off" autofocus name="pool_password" placeholder="Pool Password" type="text" required> 
-        </div>
-        <div>
-            <label for="pool_type">Choose your Pool Type</label>
-            <select id="pool_type" name="pool_type">
-                {% for pool_type in pool_types %}
-                <option value="{{ pool_type }}">{{ pool_type }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <input autocomplete="off" name="num_picks" placeholder="Number" type="number", min="0", max="18">
-            <label for="num_picks">How many Survivors will each participant pick</label>
-        </div>
-        <div>
-            <input autocomplete="off" name="dollar_buy_in" placeholder="$$$" type="number", min="0">
-            <label for="dollar_buy_in">How much money will each participant put into the pool</label>
-        </div>
-        {% endif %}
-        <button type="submit">Set up your pool!</button>
-    </form>
+<section class="pool-admin">
+    <inner-column>
+        <h1><a href="/pool/{{ pool_slug }}">{{ pool_data["pool_name"] }}</a> Admin Page</h1>
+
+        <ul class="user-list">
+        {% for user in users %}
+            <li class="user" id="user-{{ user.id }}">
+                <span class="user-name">{{ user.name }}</span>
+                <button
+                hx-delete="/pool/{{ pool_slug }}/admin/remove-user/{{ user.id }}" hx-target="#user-{{ user.id }}"
+                hx-swap="outerHTML swap:.5s"
+                hx-confirm="Are you sure you want to remove {{ user.name }}?"
+                class="remove">x</button>
+            </li>
+        {% endfor %}
+        </ul>
+    </inner-column>
+</section>
 {% endblock %}

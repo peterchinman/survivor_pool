@@ -50,10 +50,19 @@
             <!-- <legend>Payouts</legend> -->
             <div class="payout-places">
                 <label for="payout_places">Payout how many places?</label>
-                <input type="number" name="payout_places" id="payout_places" value="1" min="1" max="10" hx-get="/payout-places" hx-target="#payout-percentages" hx-trigger="load, change" hx-include=".percentage">
+                <input type="number" name="payout_places" id="payout_places" value="1" min="1" max="10" hx-get="/payout-places" hx-target="#payout-percentages" hx-trigger="load delay:500ms, change" hx-include=".percentage">
             </div>
 
             <div id="payout-percentages" hx-trigger="input delay:500ms, payout-places-updated from:body" hx-get="/calculate-percentages" hx-target="#percentage-summary" hx-include=".percentage">
+                <div class="place-percentage">
+                    <label for="place-1">
+                        <span class="ordinal" data-place="1"></span><span> Place: </span>
+                    </label>
+                    <div class="percentage-input">
+                        <input class="percentage" type="number" name="place-1" id="place-1" min="0" max="100">
+                        <span class="percent-sign">%</span>
+                    </div>
+                </div>
             </div>
 
             <script>

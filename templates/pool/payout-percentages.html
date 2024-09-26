@@ -9,7 +9,7 @@
                <span class="ordinal" data-place="{{ place }}"></span><span> Place: </span>
          </label>
          <div class="percentage-input">
-               <input type="number" name="place-{{ place }}" id="place-{{ place }}" min="0" max="{{ percentage_remaining }}" class="percentage" value="{{ percentage_dict.get(place, '') }}">
+               <input class="percentage" type="number" name="place-{{ place }}" id="place-{{ place }}" min="0" max="{{ percentage_remaining }}"  value="{{ percentage_dict.get(place, '') }}">
                <span class="percent-sign">%</span>
          </div>
       </div>

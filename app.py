@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
-from helpers import apology, login_required, admin_required
+from helpers import apology, login_required, site_admin_required, pool_admin_required
 
 # WIDEFRAME TODO:
 #   - Use SQLAlchemy
@@ -52,7 +52,7 @@ def after_request(response):
     return response
 
 
-@app.route("/init_db", methods=["GET"])
+@app.route("/init-db", methods=["GET"])
 def init_db():
     #create tables
     error = False
@@ -60,12 +60,11 @@ def init_db():
         CREATE TABLE user (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
-            email TEXT NOT NULL,
-            password_hash TEXT NOT NULL,
-            is_site_admin BOOLEAN NOT NULL
+            email TEXT,
+            password_hash TEXT,
+            is_site_admin BOOLEAN
         )
     """):
-        flash("Error creating table", "error")
         error = True
     if not db.execute("""
        CREATE TABLE settings (
@@ -73,7 +72,6 @@ def init_db():
             current_season INTEGER NOT NULL
         )
     """):
-        flash("Error creating table", "error")
         error = True
     if not db.execute("""
         CREATE TABLE pool (
@@ -90,53 +88,88 @@ def init_db():
             season INTEGER NOT NULL
         )
     """):
-        flash("Error creating table", "error")
         error = True
     if not db.execute("""
         CREATE TABLE contestant (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             image_path TEXT NOT NULL,
-            left_show_in_episode INTEGER NOT NULL,
+            left_show_in_episode INTEGER,
             season INTEGER NOT NULL
         )
     """):
-        flash("Error creating table", "error")
         error = True
+
     if not db.execute("""
         CREATE TABLE user_pool_map (
+            id INTEGER PRIMARY KEY,
             user_id INTEGER NOT NULL,
             pool_id INTEGER NOT NULL,
-            is_admin BOOLEAN NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES user(id),
-            FOREIGN KEY (pool_id) REFERENCES pool(id)
+            is_admin BOOLEAN,
+            FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+            FOREIGN KEY (pool_id) REFERENCES pool(id) ON DELETE CASCADE,
+            UNIQUE (user_id, pool_id)
+                      
         )
     """):
-        flash("Error creating table", "error")
         error = True
     if not db.execute("""
         CREATE TABLE pick (
-            user_id INTEGER NOT NULL,
+            user_pool_map_id INTEGER NOT NULL,
             contestant_id INTEGER NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES user(id),
-            FOREIGN KEY (contestant_id) REFERENCES contestant(id)
+            FOREIGN KEY (user_pool_map_id) REFERENCES user_pool_map(id) ON DELETE CASCADE,
+            FOREIGN KEY (contestant_id) REFERENCES contestant(id) ON DELETE CASCADE,
+            UNIQUE (user_pool_map_id, contestant_id)
         )
     """):
-        flash("Error creating table", "error")
+        error = True
+    if not db.execute("""
+        CREATE TABLE invite_token(
+            id INTEGER PRIMARY KEY,
+            pool_id INTEGER NOT NULL,
+            token TEXT NOT NULL,
+            FOREIGN KEY (pool_id) REFERENCES pool(id) ON DELETE CASCADE
+        )
+    """):
         error = True
 
-    if not error:
+    if error:
+        flash("Error creating tables", "error")
+    else:
         flash("Tables successfully created", "message")
     return redirect(url_for('index'))
     
-@app.route("/test_admin", methods=["GET"])
-def test_admin():
-    password_hash = generate_password_hash("ZXasdqwe123")
-    user_id = db.execute("INSERT INTO user (name, email, password_hash, is_site_admin) VALUES (?, ?, ?, ?)", "Peter", "peter.chinman@gmail.com", password_hash, 1)
+@app.route("/init-admin", methods=["GET"])
+def init_admin():
+    password_hash = generate_password_hash("test")
+    user_id = db.execute("INSERT INTO user (name, email, password_hash, is_site_admin) VALUES (?, ?, ?, ?)", "Peter", "test@test.com", password_hash, 1)
     session["user_id"] = user_id
     session["user_name"] = "Peter"
-    flash("Admin user successfully added", "message")
+    session["is_site_admin"] = True
+    flash("Admin user successfully added.", "message")
     return redirect(url_for('index'))
+
+@app.route("/init-contestants", methods=["GET"])
+def init_contestants():
+    # Folder path containing the images
+    folder_path = 'static/contestant-images/season-47'
+
+    # Get a list of filenames without extensions
+    names = [os.path.splitext(filename)[0] for filename in os.listdir(folder_path) if filename.endswith(('.webp'))]
+
+    for name in names:
+        if db.execute("INSERT INTO contestant (name, image_path, left_show_in_episode, season) VALUES (?, ?, NULL, ?)", name.capitalize(), "static/contestant-images/season-47/" + name + ".webp", 47):
+            flash(name + " successfully added.", "message")
+        else:
+            flash("COULD NOT ADD" + name, "error")
+
+    if db.execute("INSERT INTO settings (current_season) VALUES (47)"):
+        flash("Set season to 47.", "message")
+    else:
+        flash("Error setting season.", "error")
+    return redirect(url_for('index'))
+    
+
 
 @app.route("/", methods=["GET"])
 def index():
@@ -144,7 +177,7 @@ def index():
         return render_template("index.html")
 
 @app.route("/admin", methods=["GET", "POST"])
-@admin_required
+@site_admin_required
 def admin():
      
     if request.method == "POST":
@@ -201,27 +234,37 @@ def login():
         if len(rows) != 1 or not check_password_hash(
             rows[0]["password_hash"], password
         ):
-            return apology("invalid User Name and/or Password", 403)
+            return apology("invalid email and/or Password", 403)
+        
+       
+
+        # Get pools that a user is associated with
+
+        # Uses: for pool_id in session["pools"].keys():
+        #       if pool_id in session["pools"]:
+        #       is_admin_status = session["pools"][1]["is_admin"]
+
+        pools = db.execute("SELECT pool_id, pool_name, pool_slug, is_admin FROM user_pool_map JOIN pool ON user_pool_map.pool_id = pool.id WHERE user_id = ?", rows[0]["id"])
+
+        session["pools"] = {pool["pool_id"] : {"is_admin" : pool.get("is_admin", 0), "pool_name": pool["pool_name"], "pool_slug": pool["pool_slug"]} for pool in pools}    
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
         session["user_name"] = rows[0]["name"]
 
-        # TODO will this work? is it bool or string?
         is_site_admin = rows[0]["is_site_admin"]
         if is_site_admin:
             session["is_site_admin"] = is_site_admin
 
-        # if we came here from somewhere else, go back there
-        # TODO why isn't this working??
         next_page = request.args.get('next')
-        print(next_page)
         if next_page:
             return redirect(url_for(next_page))
-        return redirect(url_for('index'))
+        else:
+            return redirect(url_for('index'))
 
     if request.method == "GET":
-        return render_template("login.html")
+        next = request.args.get('next')
+        return render_template("login.html", next=next)
     
 @app.route("/create-account", methods=["GET", "POST"])
 def create_account():
@@ -230,7 +273,15 @@ def create_account():
         email = request.form.get("email")
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
+        checkbox = request.form.get("checkbox")
         is_site_admin = 0
+
+        # honeypot
+        if checkbox:
+            return redirect(url_for('index'))
+
+
+        
 
         if not name:
             return apology("You must include a Name", 422)
@@ -268,10 +319,16 @@ def create_account():
                 session["user_id"] = user_id
                 session["user_name"] = name
                 
-                # TODO set up this redirect to get us back to page we wanted to be at
-                return redirect(url_for('index'))
+
+                next_page = request.args.get('next')
+                if next_page:
+                    return redirect(url_for(next_page))
+                else:
+                    return redirect(url_for('index'))
+                
             else:
                 flash("Error adding user to database!", "error")
+                return redirect(url_for('index'))
 
 
     if request.method == "GET":
@@ -283,13 +340,19 @@ def user(user_id):
 
     # check user is correct
 
-    if str(session["user_id"]) != user_id:
+    if str(session.get("user_id")) != user_id:
         flash("You do not have access to this page.", "error")
-        return redirect(url_for('login')), 403
+        return redirect(url_for('login'))
     
     if request.method == "GET":
         # get pools, is_admin from user
-        pools = db.execute("SELECT pool_id, is_admin, pool_slug, pool_name, season FROM user_pool_map JOIN pool ON user_pool_map.pool_id = pool.id WHERE user_id = ?", user_id)
+        pools = db.execute("""
+            SELECT pool_id, is_admin, pool_slug, pool_name, season
+            FROM user_pool_map
+            JOIN pool ON user_pool_map.pool_id = pool.id
+            WHERE user_id = ?
+            ORDER BY season DESC""", user_id)
+
         user = db.execute("SELECT name, email FROM user WHERE id = ?", user_id)[0]
         
         return render_template("user.html", pools=pools, user=user)
@@ -302,7 +365,7 @@ def logout():
 
     # Forget any user_id
     session.clear()
-    flash("Logged out!")
+    flash("Logged out!", "message")
 
     return redirect("/")
 
@@ -324,9 +387,9 @@ pool_types = {
 @login_required
 def create_pool():
 
-    if request.method == "POST":
+    # TODO don't need password, right?? just a magic link?
 
-        # TODO: a user should only be able to be admin for one pool each season!
+    if request.method == "POST":
 
         pool_name = request.form.get("pool_name")
         password = request.form.get("password")
@@ -415,7 +478,13 @@ def create_pool():
             # insert into user_pool_map with is_admin set to true
             db.execute("INSERT INTO user_pool_map (user_id, pool_id, is_admin) VALUES (?, ?, ?)", session["user_id"], pool_id, 1)
 
-            # TODO is this the right re-direct? or separate <pool>/setup page? how to check if pool has been properly setup?
+
+            if "pools" not in session:
+                session["pools"] = {}
+
+            session["pools"][pool_id] = {"is_admin": True, "pool_name": pool_name, "pool_slug": sanitized_pool_slug}
+
+
             flash("Pool successfully created", "message")
             return redirect(url_for('pool_admin', pool_slug=pool_slug))
     
@@ -434,7 +503,6 @@ def create_pool():
 @app.route('/check-pool-type', methods=["GET"])
 def check_pool_type():
     pool_type = request.args.get("pool_type")
-    print(f"Received pool_type: {pool_type}")  # Debugging log
     if pool_type == "points":
         return render_template("pool/multiplier_field.html")
     else:
@@ -486,44 +554,50 @@ def sanitize_subdirectory_name(name):
     sanitized_pool_slug = os.path.normpath(name)
     return sanitized_pool_slug
 
-
-
-
+@app.route('/pool/search', methods=["GET"])
+def pool_search():
+    pool_search = request.args.get("pool-search")
+    if pool_search:
+        pools = db.execute("SELECT pool_name, pool_slug FROM pool WHERE pool_name LIKE ?", ('%' + pool_search + '%'))
+        return render_template("pool/search.html", pools=pools)
+    else:
+        return
     
 
+# TODO implement different pool types
+    
 @app.route('/pool/<pool_slug>', methods=["GET"])
 def show_pool(pool_slug):
 
     if request.method == "GET":
-        
-        # TODO password??
-        # render template with pool login form?
 
-        # get num_picks
-        num_picks = db.execute("SELECT num_picks FROM pool WHERE pool_slug IS ?", pool_slug)[0]["num_picks"]
+        # get pool_data
+        pool_data = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)[0]
         max_left_show = db.execute("SELECT MAX(left_show_in_episode) from contestant")[0]['MAX(left_show_in_episode)']
         if max_left_show:
             current_week = 1 + int(max_left_show)
         else:
             current_week = 1
 
-        # First Get Rows of unique users from <pool_slug>
+        # First Get Rows of unique users from <pool_slug> who have registered Picks
         
-        rows = db.execute("""SELECT * FROM user_pool_map
-                                JOIN user
-                                ON user_pool_map.user_id = user.id
-                                WHERE pool_id IS (SELECT id FROM pool WHERE pool_slug is ?)
-                                ORDER BY user_id""", pool_slug)
+        rows = db.execute("""SELECT * FROM user
+                                JOIN user_pool_map
+                                ON user.id = user_pool_map.user_id
+                                WHERE EXISTS (SELECT 1 FROM pick WHERE pick.user_pool_map_id = user_pool_map.id)
+                                AND pool_id IS (?)
+                                ORDER BY user_id""", pool_data["id"])
 
         # Now iterate over rows getting users picks, left_show_in_episode, and points and adding them to each row-dict
-        # formatted [{'pick0': [img path], 'left_show_in_episode0': [insert week pick0 voted out in] 'pick1' : ____, …, 'points' : user_total_points}]
+        # formatted [{'pick0': [name],'image_path0': [image_path], 'left_show_in_episode0': [insert week pick0 voted out in] 'pick1' : ____, …, 'points' : user_total_points}]
         for row in rows:
 
             rows_of_picks = db.execute("""SELECT image_path, left_show_in_episode, name 
-                                            FROM contestant
-                                            JOIN pick ON contestant.id = pick.contestant_id
-                                            WHERE user_id IS ?
-                                            ORDER BY left_show_in_episode""", row['user_id'])
+                                            FROM contestant JOIN pick
+                                            ON contestant.id = pick.contestant_id
+                                            WHERE user_pool_map_id IS (SELECT id FROM user_pool_map WHERE user_id = ? AND pool_id = ?)
+                                            ORDER BY left_show_in_episode""",
+                                            row['user_id'], pool_data["id"])
 
             # now we iterate over each individual user's individual picks
             user_total_points = 0
@@ -545,32 +619,24 @@ def show_pool(pool_slug):
         rows = sorted(rows, key=lambda x: x['points'], reverse=True)
 
 
-        return render_template("pool/pool_slug.html", num_picks=num_picks, current_week=current_week, rows=rows, pool_slug=pool_slug)
-
-
-
-
+        return render_template("pool/pool_slug.html", pool_data=pool_data, current_week=current_week, rows=rows, pool_slug=pool_slug)
 
 @app.route('/pool/<pool_slug>/admin', methods=["GET", "POST"])
-@login_required
+@pool_admin_required
 def pool_admin(pool_slug):
-    # TODO: set up password protect for this page? simple as throwing in login decoration?
-
-    is_admin_row = db.execute("SELECT is_admin FROM user_pool_map WHERE user_id = ? AND pool_id = (SELECT id FROM pool WHERE pool_slug = ?)", session["user_id"], pool_slug)
-    if is_admin_row:
-        is_admin = is_admin_row[0]["is_admin"]
-    else:
-        is_admin = None
-    if not is_admin:
-        flash("You are not authorized to access this page.", "warning")
-        return redirect(url_for('index')), 403
 
     if request.method == "GET":
 
-       
+        pool_data = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)[0]
 
-        row = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)[0]
-        return render_template("pool/admin.html", pool_types=pool_types, row=row, pool_slug=pool_slug)
+        users = db.execute("""SELECT user.id, name FROM user
+                                JOIN user_pool_map
+                                ON user.id = user_pool_map.user_id
+                                WHERE EXISTS (SELECT 1 FROM pick WHERE pick.user_pool_map_id = user_pool_map.id)
+                                AND pool_id IS (?)
+                                """, pool_data["id"])
+
+        return render_template("pool/admin.html", pool_data=pool_data, users=users, pool_slug=pool_slug)
 
     if request.method == "POST":
         pool_password = request.form.get("pool_password")
@@ -600,54 +666,89 @@ def pool_admin(pool_slug):
                     , password_hash, pool_type, pool_dollar, num_picks, pool_slug)
         
         return redirect(url_for('show_pool', pool_slug=pool_slug))
-        
-@app.route('/pool/<pool_slug>/signup', methods=["GET", "POST"])
-def pool_signup(pool_slug):
+    
+@app.route('/pool/<pool_slug>/admin/remove-user/<user_id>', methods=["DELETE"])
+@pool_admin_required
+def remove_user(pool_slug, user_id):
+
+    pool_id = db.execute("SELECT id FROM pool WHERE pool_slug = ?", pool_slug)[0]["id"]
+    
+    db.execute("DELETE FROM user_pool_map WHERE user_id = ? AND pool_id = ?", user_id, pool_id)
+    
+    return "", 200
+
+# TODO implement /pool/<pool_slug>/join/<secret-key>
+
+@app.route('/pool/<pool_slug>/join', methods=["GET", "POST"])
+def join_pool(pool_slug):
     if request.method == "GET":
-
-        # TODO implement pool password
-
-        # check pool_slug
-        # TODO is this necessary? 
-        pool_slug_check = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)
-        if len(pool_slug_check) != 1:
-            return apology("Not a valid Pool", 422)
+        
+        # Check pool_slug
+        pool_data = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)
+        if len(pool_data) != 1:
+            flash("Could not find a pool with that name.", "error")
+            return redirect(url_for('index'))
+        pool_data = pool_data[0]
 
         # get list of survivors
-        contestants = db.execute("SELECT * FROM contestants")
+        contestants = db.execute("SELECT * FROM contestant WHERE season = (SELECT current_season FROM settings)")
 
         # get num_picks
 
-        num_picks = pool_slug_check[0]["num_picks"]
+        num_picks = pool_data["num_picks"]
         
-        return render_template("pool/signup.html", pool_slug=pool_slug, contestants=contestants, num_picks=num_picks)
+        return render_template("pool/join.html", pool_slug=pool_slug, contestants=contestants, num_picks=num_picks, pool_data=pool_data)
 
     if request.method == "POST":
         
-        # TODO get user somehow
-        user_name = request.form.get("user_name")
-        picks = request.form.getlist("checkboxes")
+        name = request.form.get("name")
+        picks = request.form.getlist("picks")
 
-        num_picks = db.execute("SELECT * FROM admin WHERE pool_slug IS ?", pool_slug)[0]["num_picks"]
+        num_picks = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)[0]["num_picks"]
 
-        #check number of picks TODO implement client side verification
+        #check number of picks
         if len(picks) != num_picks:
-            return apology("Wrong number of contestants selected", 422)
-
-        # TODO make these work with the current system
-        # update users and picks databases
+            flash("Wrong number of contestants selected.", "error")
+            return redirect(url_for('join_pool', pool_slug=pool_slug))
         
-        db.execute("""INSERT INTO users (user_name, pool_id) 
-                        VALUES (?,
-                               (SELECT id FROM admin WHERE pool_slug IS ?))""",
-                        user_name, pool_slug)
+
+        
+        # TODO this is causing problems if multiple people try to join a pool while one user is already logged in
+
+        # if user already logged in
+        if session.get("user_id"):
+            user_id = session.get("user_id")
+            user_pool_map_id = db.execute("SELECT id FROM user_pool_map WHERE user_id = ? AND pool_id = (SELECT id FROM pool WHERE pool_slug = ?)", user_id, pool_slug)[0]["id"]
+            # check if user has already made picks for this pool
+            if len(db.execute("""SELECT * FROM pick
+                              JOIN user_pool_map ON pick.user_pool_map_id = user_pool_map.id
+                              WHERE user_id = ?
+                              AND pool_id = (SELECT id FROM pool WHERE pool_slug = ?)
+                              """, user_id, pool_slug)) != 0:
+                flash("You've already made your selection for this pool.",  "error")
+                return redirect(url_for('show_pool', pool_slug=pool_slug))
+        # if new user
+        else:
+            # Check if user name already in use in that pool
+            if len(db.execute("""
+                              SELECT name FROM user 
+                              JOIN user_pool_map
+                              ON user.id = user_pool_map.user_id
+                              WHERE name = ?""", name)) != 0:
+                flash("That name is already in use in the pool, choose another.", "error")
+                return redirect(url_for('join_pool', pool_slug=pool_slug))
+            else:
+                # add new user to user and user_pool_map
+                user_id = db.execute("INSERT INTO user (name) VALUES (?)", name)
+                user_pool_map_id = db.execute("INSERT INTO user_pool_map (user_id, pool_id) VALUES (?, (SELECT id FROM pool WHERE pool_slug = ?))", user_id, pool_slug)
+        
 
         for pick in picks:
-            db.execute("""INSERT INTO picks (user_id, contestant_id)
-                        VALUES ((SELECT user_id FROM users WHERE user_name is ?),
-                                ?)""", 
-                        user_name, int(pick))
+            db.execute("""INSERT INTO pick (user_pool_map_id, contestant_id)
+                VALUES (?, ?)""", 
+                user_pool_map_id, int(pick))
 
         return redirect(url_for('show_pool', pool_slug=pool_slug))
         
     
+

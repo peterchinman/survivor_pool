@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Join {{ pool_slug }}
+{% endblock %}
+
+{% block main %}
+
+<section>
+<inner-column>
+
+    <form action="{{ url_for('join_pool', pool_slug=pool_slug) }}" method="post" class="join-pool-form" id="join-pool-form">
+
+        <h1 class="attention-voice">Join {{ pool_data.pool_name }}</h1>
+
+        <label for="name">Choose a display name</label>
+        <input name="name" id="name" type="text" required aria-describedby="name-more" minlength="2" maxlength="20" placeholder="Your display name" required>
+        <fieldset class="checkbox-list">
+            <legend>Choose {{ num_picks }} contestants</legend>
+        {% for contestant in contestants %}
+        
+            <label class="contestant">
+                <input name="picks" value="{{ contestant.id }}" type="checkbox">
+                <picture><img src ="/{{ contestant.image_path }}" alt="{{ contestant.name }}"></picture>
+                <span class="name">{{ contestant.name }}</span>
+            </label>
+            {% endfor %}
+        </fieldset>
+        
+        <button type="submit" id="submit-button" disabled>Submit Your Picks!</button>
+    </form>
+</inner-column>
+</section>
+
+<script>
+
+document.addEventListener('htmx:afterOnLoad', function() {
+  const numPicks = {{ num_picks }}; // Replace this with the actual value from your backend
+  const checkboxes = document.querySelectorAll('input[name="picks"]');
+  const submitButton = document.getElementById('submit-button');
+
+  function updateCheckboxState() {
+    const checkedCount = document.querySelectorAll('input[name="picks"]:checked').length;
+
+    // Disable unchecked checkboxes if the user has selected enough
+    if (checkedCount >= numPicks) {
+      checkboxes.forEach(function(cb) {
+        if (!cb.checked) {
+          cb.disabled = true;
+        }
+      });
+    } else {
+      checkboxes.forEach(function(cb) {
+        cb.disabled = false;
+      });
+    }
+
+    // Enable or disable the submit button based on whether the required picks have been selected
+    if (checkedCount === numPicks) {
+      submitButton.disabled = false;
+    } else {
+      submitButton.disabled = true;
+    }
+  }
+
+  checkboxes.forEach(function(checkbox) {
+    checkbox.addEventListener('change', updateCheckboxState);
+  });
+
+  // Initial state check (in case the page loads with selections)
+  updateCheckboxState();
+});
+
+</script>
+{% endblock %}

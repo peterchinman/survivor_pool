@@ -4,13 +4,26 @@
     Survivor Pool
 {% endblock %}
 
+{% block main_class %}
+    home
+{% endblock %}
+
 {% block main %}
-<section class="info" hx-boost="true">
+<section class="info body-copy">
 <inner-column>
-    <h1>Make and manage betting pools for Surivor.</h1>
+    <h1 class="attention-voice summary">Easily make and manage betting pools for the popular reality television show, Survivor.</h1>
     <a href="{{ url_for('create_pool') }}" class="loud-link">Create a Pool</a>
-    <p>To create a pool, you'll need to make an account.</p>
-    <p>Already made a pool? <a href="/login">Log in</a> to manage an existing pool.</p>
+   
+</inner-column>
+</section>
+<section>
+<inner-column>
+    
+    <div class="search">
+        <label for="input">Search for your Pool</label>
+        <input type="text" id="pool-search" name="pool-search" hx-get="/pool/search" hx-target="#search-results" hx-trigger="input delay:500ms" placeholder="Search">
+        <ul id="search-results"></ul>
+    </div>
 </inner-column>
 </section>
 

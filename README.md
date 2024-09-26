@@ -47,9 +47,9 @@ erDiagram
     boolean is_site_admin
    }
 
-   user }|--|{ pick : ""
+   user_pool_map }|--|{ pick : ""
    pick{
-    integer user_id
+    integer user_pool_map_id
     integer contestant_id
    }
     contestant{
@@ -59,8 +59,14 @@ erDiagram
         integer left_show_in_episode
         integer season
     }
-%% contestants }|--|{ pick : ""
-pick }|--|{ contestant : ""  
+
+    pick }|--|{ contestant : "" 
+    pool ||--|{ invite_token : ""
+    invite_token {
+        integer id
+        integer pool_id
+        text token
+    }
 ```
 
 database tables
