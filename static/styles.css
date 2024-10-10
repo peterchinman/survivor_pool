@@ -195,6 +195,16 @@ footer {
 
 /* POOL ADMIN */
 
+.invite-tokens {
+    max-width: 400px;
+    margin: 0 auto; 
+    padding: 20px;
+    /* background-color: #f9f9f9; */
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    margin-block: 2rem;
+}
+
 .user-list {
     .htmx-swapping {
         opacity: 0;
@@ -307,6 +317,11 @@ form {
     label {
         margin-bottom: .5rem;
         display: block;
+        .label-note {
+            font-size: .8rem;
+            color: var(--neutral-700);
+            padding-left: .2rem;
+        }
     }
 
     .sublabel {
@@ -332,6 +347,11 @@ form {
         display: inline-block;
         border: 1px solid var(--neutral-200);
         border-radius: 4px;
+    }
+
+    .optional {
+        border: 1px solid var(--neutral-200);
+        padding: .5rem;
     }
 
     .payouts {
@@ -439,6 +459,10 @@ form {
             margin-bottom: 0;
             cursor: pointer;
         }
+
+       
+
+        
 
         .sublabel {
             color: var(--neutral-700);
@@ -576,7 +600,7 @@ form {
 .strong-voice {
 	/* font-family: sans-serif; */
 	font-size: clamp(1rem, 3vw, 1.5rem);
-    /* font-weight: 600; */
+    font-weight: 600;
 }
 
 .attention-voice {

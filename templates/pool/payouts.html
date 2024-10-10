@@ -1,0 +1,34 @@
+<fieldset class="payouts">
+   <div class="payout-places">
+         <label for="payout_places">Payout how many places?</label>
+         <input type="number" name="payout_places" id="payout_places" value="1" min="1" max="10" hx-get="/payout-places" hx-target="#payout-percentages" hx-trigger="load, change" hx-include=".percentage">
+   </div>
+   <div id="payout-percentages" hx-trigger="input delay:500ms, payout-places-updated from:body" hx-get="/calculate-percentages" hx-target="#percentage-summary" hx-include=".percentage">
+         <div class="place-percentage">
+            <label for="place-1">
+               <span class="ordinal" data-place="1"></span><span> Place: </span>
+            </label>
+            <div class="percentage-input">
+               <input class="percentage" type="number" name="place-1" id="place-1" min="0" max="100">
+               <span class="percent-sign">%</span>
+            </div>
+         </div>
+   </div>
+   <script>
+         function updateOrdinals() {
+            const ordinalElements = document.querySelectorAll('.ordinal');
+            ordinalElements.forEach(element => {
+               const place = parseInt(element.getAttribute('data-place'));
+               element.textContent = ordinal_suffix_of(place);
+            });
+         }
+
+         // Run on initial page load
+         document.addEventListener('DOMContentLoaded', updateOrdinals);
+
+         // Run when HTMX swaps in new content
+         document.body.addEventListener('htmx:afterSwap', updateOrdinals);
+         </script>
+    
+</fieldset>
+

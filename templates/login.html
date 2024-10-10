@@ -17,7 +17,6 @@
 
    
     <form action="{{ url_for('login', next=request.args.get('next')) }}" method="post">
-        <!-- TODO client side verification of this form -->
         <label for="email">Email Address</label>
         <input autocomplete="off" autofocus name="email" id="email" placeholder="Enter your email address" type="email" required>
         <label for="password">Password</label>

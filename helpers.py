@@ -56,7 +56,7 @@ def pool_admin_required(f):
         if not session.get("user_id"):
             return redirect(url_for('login'))
 
-        if pool_id not in session.get("pools", {}) or not session["pools"][pool_id]["is_admin"]:
+        if pool_id not in session.get("pools", {}) or session["pools"][pool_id].get("is_admin", 0) != 1:
             return "Unauthorized", 403
         return f(*args, **kwargs)
     return decorated_function

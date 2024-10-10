@@ -30,7 +30,9 @@
                 <div class="pool-user-card">
                     <text-content>
                         <p class="name">{{ row.name }}</p>
+                        {% if pool_data["pool_type"] == "points" %}
                         <p class="points">{{ row.points }}</p>
+                        {% endif %}
                     </text-content>
                     <ul class="picks">
                     {% for i in range(pool_data.num_picks) %}

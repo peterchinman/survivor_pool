@@ -13,6 +13,7 @@
 
         <h1 class="attention-voice">Join {{ pool_data.pool_name }}</h1>
 
+        {# TODO hide this field if we're the admin #}
         <label for="name">Choose a display name</label>
         <input name="name" id="name" type="text" required aria-describedby="name-more" minlength="2" maxlength="20" placeholder="Your display name" required>
         <fieldset class="checkbox-list">
@@ -34,42 +35,46 @@
 
 <script>
 
-document.addEventListener('htmx:afterOnLoad', function() {
-  const numPicks = {{ num_picks }}; // Replace this with the actual value from your backend
-  const checkboxes = document.querySelectorAll('input[name="picks"]');
-  const submitButton = document.getElementById('submit-button');
+['DOMContentLoaded', 'htmx:afterOnLoad'].forEach(event => {
+    document.addEventListener(event, function() {
+      console.log('Event Listener has fired.')
+      const numPicks = {{ num_picks }}; // Replace this with the actual value from your backend
+      const checkboxes = document.querySelectorAll('input[name="picks"]');
+      const submitButton = document.getElementById('submit-button');
 
-  function updateCheckboxState() {
-    const checkedCount = document.querySelectorAll('input[name="picks"]:checked').length;
+      function updateCheckboxState() {
+        const checkedCount = document.querySelectorAll('input[name="picks"]:checked').length;
 
-    // Disable unchecked checkboxes if the user has selected enough
-    if (checkedCount >= numPicks) {
-      checkboxes.forEach(function(cb) {
-        if (!cb.checked) {
-          cb.disabled = true;
+        // Disable unchecked checkboxes if the user has selected enough
+        if (checkedCount >= numPicks) {
+          checkboxes.forEach(function(cb) {
+            if (!cb.checked) {
+              cb.disabled = true;
+            }
+          });
+        } else {
+          checkboxes.forEach(function(cb) {
+            cb.disabled = false;
+          });
         }
-      });
-    } else {
-      checkboxes.forEach(function(cb) {
-        cb.disabled = false;
-      });
-    }
 
-    // Enable or disable the submit button based on whether the required picks have been selected
-    if (checkedCount === numPicks) {
-      submitButton.disabled = false;
-    } else {
-      submitButton.disabled = true;
-    }
-  }
+        // Enable or disable the submit button based on whether the required picks have been selected
+        if (checkedCount === numPicks) {
+          submitButton.disabled = false;
+        } else {
+          submitButton.disabled = true;
+        }
+      }
 
-  checkboxes.forEach(function(checkbox) {
-    checkbox.addEventListener('change', updateCheckboxState);
+      checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', updateCheckboxState);
+      });
+
+      // Initial state check (in case the page loads with selections)
+      updateCheckboxState();
   });
-
-  // Initial state check (in case the page loads with selections)
-  updateCheckboxState();
 });
+
 
 </script>
 {% endblock %}

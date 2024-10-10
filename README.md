@@ -66,6 +66,7 @@ erDiagram
         integer id
         integer pool_id
         text token
+        boolean active
     }
 ```
 

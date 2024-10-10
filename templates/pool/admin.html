@@ -9,18 +9,36 @@
     <inner-column>
         <h1><a href="/pool/{{ pool_slug }}">{{ pool_data["pool_name"] }}</a> Admin Page</h1>
 
-        <ul class="user-list">
-        {% for user in users %}
-            <li class="user" id="user-{{ user.id }}">
-                <span class="user-name">{{ user.name }}</span>
-                <button
-                hx-delete="/pool/{{ pool_slug }}/admin/remove-user/{{ user.id }}" hx-target="#user-{{ user.id }}"
-                hx-swap="outerHTML swap:.5s"
-                hx-confirm="Are you sure you want to remove {{ user.name }}?"
-                class="remove">x</button>
-            </li>
+        <div class="invite-tokens body-copy">
+        <h1 class="strong-voice">Magic Invite Links</h1>
+        <p>Send this link to the groupchat. Anyone with the link will be able to join your pool.</p>
+        {% for token in invite_tokens %}
+
+        {# TODO this does not include domain name #}
+        <a href="{{ url_for('invite_token', pool_slug=pool_slug, secret_key=token['token']) }}">{{ url_for('invite_token', pool_slug=pool_slug, secret_key=token['token']) }}</a>
+        <button>Copy Link</button>
         {% endfor %}
+        </div>
+
+        {% if users %}
+        <ul class="user-list">
+        
+            {% for user in users %}
+                <li class="user" id="user-{{ user.id }}">
+                    <span class="user-name">{{ user.name }}</span>
+                    <button
+                    hx-delete="/pool/{{ pool_slug }}/admin/remove-user/{{ user.id }}" hx-target="#user-{{ user.id }}"
+                    hx-swap="outerHTML swap:.5s"
+                    hx-confirm="Are you sure you want to remove {{ user.name }}?"
+                    class="remove">x</button>
+                </li>
+            {% endfor %}
         </ul>
+        {% else %}
+            <p>No one has signed up for your pool yet!</p>
+        {% endif %}
+
+        
     </inner-column>
 </section>
 {% endblock %}

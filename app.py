@@ -1,6 +1,8 @@
 import os
 import re
 import json
+import secrets
+
 
 from cs50 import SQL
 from datetime import datetime, timedelta
@@ -14,13 +16,12 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import apology, login_required, site_admin_required, pool_admin_required
 
-# WIDEFRAME TODO:
+# LONGTERM TODO:
 #   - Use SQLAlchemy
 #   - Use a config.py file
 #   - Consider blueprints
 #   - More robust error handling
-#       - Pass form errors back to form, consult HTMX
-#   - Get HTMX set up  
+#       - Pass form errors back to form, consult HTMX 
 
 # Configure application
 app = Flask(__name__)
@@ -78,7 +79,6 @@ def init_db():
             id INTEGER PRIMARY KEY,
             pool_name TEXT NOT NULL,
             pool_slug TEXT NOT NULL,
-            password_hash TEXT NOT NULL,
             pool_type TEXT NOT NULL,
             multiplier NUMERIC,
             num_picks INTEGER NOT NULL,
@@ -128,6 +128,7 @@ def init_db():
             id INTEGER PRIMARY KEY,
             pool_id INTEGER NOT NULL,
             token TEXT NOT NULL,
+            active BOOLEAN NOT NULL,
             FOREIGN KEY (pool_id) REFERENCES pool(id) ON DELETE CASCADE
         )
     """):
@@ -279,8 +280,6 @@ def create_account():
         # honeypot
         if checkbox:
             return redirect(url_for('index'))
-
-
         
 
         if not name:
@@ -369,7 +368,6 @@ def logout():
 
     return redirect("/")
 
- # TODO this should maybe be a list of dicts with keys as html name and values as html dispay?
 pool_types = {
     "points" : {
         "name" : "points",
@@ -387,13 +385,11 @@ pool_types = {
 @login_required
 def create_pool():
 
-    # TODO don't need password, right?? just a magic link?
-
     if request.method == "POST":
 
         pool_name = request.form.get("pool_name")
-        password = request.form.get("password")
-        confirmation = request.form.get("confirmation")
+        # password = request.form.get("password")
+        # confirmation = request.form.get("confirmation")
         pool_type = request.form.get("pool_type")
         multiplier = int(request.form.get("multiplier", 0))
         num_picks = int(request.form.get("num_picks"))
@@ -420,10 +416,13 @@ def create_pool():
         
         if not pool_name:
             return apology("You must include Pool Name", 422)
-        if not password:
-            return apology("You must include Password", 422)
-        if not confirmation:
-            return apology("You must include Confirmation", 422)
+        if len(pool_name) < 2 or len(pool_name) > 20:
+            flash("Pool Name must be between 2 and 20 characters", "error")
+            return redirect(url_for('create_pool'))
+        # if not password:
+        #     return apology("You must include Password", 422)
+        # if not confirmation:
+        #     return apology("You must include Confirmation", 422)
         if not pool_type:
             return apology("Choose a pool type", 422)
         if pool_type not in pool_types:
@@ -460,40 +459,47 @@ def create_pool():
         
         # check password & confirmation
 
-        if password == confirmation:
+        # if password == confirmation:
 
-            # hash password
-            password_hash = generate_password_hash(password)
-            # get current season
-            # implemented this if else workaround for testing
-            row = db.execute("SELECT current_season FROM settings")
-            if row:
-                season = row[0]["current_season"]
-            else:
-                season = 0
+        #     # hash password
+        #     password_hash = generate_password_hash(password)
+        # get current season
+        # implemented this if else workaround for testing
+        row = db.execute("SELECT current_season FROM settings")
+        if row:
+            season = row[0]["current_season"]
+        else:
+            season = 0
 
-            # insert into pool
+        # insert into pool
 
-            pool_id = db.execute("INSERT INTO pool (pool_name, pool_slug, password_hash, pool_type, multiplier, num_picks, dollar_buy_in, payout_places, payout_json, season) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", pool_name, pool_slug, password_hash, pool_type, multiplier, num_picks, dollar_buy_in, payout_places, payout_json, season)
-            # insert into user_pool_map with is_admin set to true
-            db.execute("INSERT INTO user_pool_map (user_id, pool_id, is_admin) VALUES (?, ?, ?)", session["user_id"], pool_id, 1)
+        pool_id = db.execute("INSERT INTO pool (pool_name, pool_slug, pool_type, multiplier, num_picks, dollar_buy_in, payout_places, payout_json, season) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", pool_name, sanitized_pool_slug, pool_type, multiplier, num_picks, dollar_buy_in, payout_places, payout_json, season)
+
+        # insert into user_pool_map with is_admin set to true
+        db.execute("INSERT INTO user_pool_map (user_id, pool_id, is_admin) VALUES (?, ?, ?)", session["user_id"], pool_id, 1)
+
+        #create a invite token
+
+        token = secrets.token_urlsafe(32)
+
+        token_id = db.execute("INSERT INTO invite_token (pool_id, token, active) VALUES (?, ?, ?)", pool_id, token, 1)
+
+        # update session
+        if "pools" not in session:
+            session["pools"] = {}
+
+        session["pools"][pool_id] = {"is_admin": True, "pool_name": pool_name, "pool_slug": sanitized_pool_slug}
 
 
-            if "pools" not in session:
-                session["pools"] = {}
-
-            session["pools"][pool_id] = {"is_admin": True, "pool_name": pool_name, "pool_slug": sanitized_pool_slug}
-
-
-            flash("Pool successfully created", "message")
-            return redirect(url_for('pool_admin', pool_slug=pool_slug))
+        flash("Pool successfully created", "message")
+        return redirect(url_for('pool_admin', pool_slug=sanitized_pool_slug))
     
             
 
 
         # else: passwords don't match
-        else:
-            return apology("password and confirmation do not match", 422)
+        # else:
+            # return apology("password and confirmation do not match", 422)
     
         
 
@@ -507,6 +513,13 @@ def check_pool_type():
         return render_template("pool/multiplier_field.html")
     else:
         return ""  # Return nothing if the pool type is not "points"
+
+@app.route('/dollar_buy_in', methods=["GET"])
+def dollar_buy_in():
+    dollar_buy_in = request.args.get("dollar_buy_in")
+    if dollar_buy_in:
+        return render_template("pool/payouts.html")
+
 
 @app.route('/payout-places', methods=["GET"])
 def payout_places():
@@ -547,9 +560,6 @@ ALLOWED_USER_NAME_REGEX = re.compile(r'^[a-zA-Z0-9\._-]+$')
 def is_valid_subdirectory_name(name):
     # Check if the name matches the allowed characters regex and has a reasonable length
     return bool(ALLOWED_pool_slug_REGEX.match(name)) and len(name) <= 50
-# TODO I'll have to use this for create an account page
-def is_valid_user_name(name):
-    return bool(ALLOWED_USER_NAME_REGEX.match(name)) and len(name) <=50
 def sanitize_subdirectory_name(name):
     sanitized_pool_slug = os.path.normpath(name)
     return sanitized_pool_slug
@@ -562,10 +572,7 @@ def pool_search():
         return render_template("pool/search.html", pools=pools)
     else:
         return
-    
-
-# TODO implement different pool types
-    
+        
 @app.route('/pool/<pool_slug>', methods=["GET"])
 def show_pool(pool_slug):
 
@@ -601,6 +608,7 @@ def show_pool(pool_slug):
 
             # now we iterate over each individual user's individual picks
             user_total_points = 0
+            survivors_alive = 0
             # TODO sloppy beginner logic, update this
             for j in range(len(rows_of_picks)):
                 # rows_of_picks[j]['x'] x need to be the same as SELECT x from rows_of_picks
@@ -609,14 +617,18 @@ def show_pool(pool_slug):
                 # below int conversion requires "or 0" in case of None
                 # thus surivors who haven't been voted out, have value 0
                 row[f'left_show_in_episode{j}'] = int(rows_of_picks[j]['left_show_in_episode'] or 0)
+                if row[f'left_show_in_episode{j}'] == 0:
+                    survivors_alive += 1
                 # implement POINTS and add it to each row  
                 weeks_survived = current_week if row[f'left_show_in_episode{j}'] == 0 else row[f'left_show_in_episode{j}']
-                # TODO: change 2 to multipler value 
-                user_total_points += 2**(weeks_survived - 1)
-            row['points'] = user_total_points 
+                user_total_points += int(pool_data["multiplier"])**(weeks_survived - 1)
+            row['points'] = user_total_points
+            row['survivors_alive'] = survivors_alive
 
-
-        rows = sorted(rows, key=lambda x: x['points'], reverse=True)
+        if pool_data["pool_type"] == "points":
+            rows = sorted(rows, key=lambda x: x['points'], reverse=True)
+        if pool_data["pool_type"] == "sole survivor":
+            rows = sorted(rows, key=lambda x: x['survivors_alive'], reverse=True)
 
 
         return render_template("pool/pool_slug.html", pool_data=pool_data, current_week=current_week, rows=rows, pool_slug=pool_slug)
@@ -635,37 +647,34 @@ def pool_admin(pool_slug):
                                 WHERE EXISTS (SELECT 1 FROM pick WHERE pick.user_pool_map_id = user_pool_map.id)
                                 AND pool_id IS (?)
                                 """, pool_data["id"])
-
-        return render_template("pool/admin.html", pool_data=pool_data, users=users, pool_slug=pool_slug)
-
-    if request.method == "POST":
-        pool_password = request.form.get("pool_password")
-        pool_type = request.form.get("pool_type")
-        pool_dollar = int(request.form.get("pool_dollar"))
-        num_picks = int(request.form.get("num_picks"))
-
-        password_hash = generate_password_hash(pool_password)
-
-        if not pool_password:
-            return apology("Pool Password required", 422)
-        if pool_type not in pool_types:
-            return apology("Incorrect pool type", 422)
-        if pool_dollar < 0:
-            return apology("Pool dollar amount can not be negative", 422)
-        if not num_picks:
-            return apology("Must choose number of Survivor picks", 422)
-        if num_picks <=0 or num_picks >=18:
-            return apology("Invalid number of Survivor picks", 422)
-
-        db.execute("""UPDATE pool
-                      SET password_hash = ?,
-                      pool_type = ?,
-                      dollar_buy_in = ?,
-                      num_picks = ?
-                      WHERE pool_slug is ?"""
-                    , password_hash, pool_type, pool_dollar, num_picks, pool_slug)
         
-        return redirect(url_for('show_pool', pool_slug=pool_slug))
+        invite_tokens = db.execute("SELECT * FROM invite_token WHERE pool_id = ? AND active = 1", pool_data["id"])
+
+        
+
+
+        return render_template("pool/admin.html", pool_data=pool_data, users=users, pool_slug=pool_slug, invite_tokens=invite_tokens)
+    
+    # TODO implement POST for change pool info?
+    
+@app.route('/pool/<pool_slug>/admin/invite-token/<token_id>', methods=["PATCH"])
+@pool_admin_required
+def generate_invite_token(pool_slug, token_id):
+    # PATCH means DE-ACTIVATE
+    if request.method == "PATCH":
+        pool_id = db.execute("SELECT id FROM pool WHERE pool_slug = ?", pool_slug)[0]["id"]
+
+        # Check if token_id, exists
+        token_row = db.execute("SELECT id FROM invite_token WHERE id = ?", token_id)
+        if len(token_row) != 1:
+            return "Error accessing token records"
+        # Token does exist, so we can deactivate it
+        db.execute("UPDATE invite_token SET active = 0 WHERE id = ?", token_id)
+
+        return "", 200
+
+            
+
     
 @app.route('/pool/<pool_slug>/admin/remove-user/<user_id>', methods=["DELETE"])
 @pool_admin_required
@@ -677,18 +686,47 @@ def remove_user(pool_slug, user_id):
     
     return "", 200
 
-# TODO implement /pool/<pool_slug>/join/<secret-key>
+@app.route('/pool/<pool_slug>/join/<secret_key>', methods=["GET"])
+def invite_token(pool_slug, secret_key):
+    if request.method == "GET":
+        # Check pool_slug
+        pool_row = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)
+        if len(pool_row) != 1:
+            flash("Could not find a pool with that name.", "error")
+            return redirect(url_for('index'))
+        pool_data = pool_row[0]
+
+        # Check invite token
+        token_row = db.execute("SELECT token FROM invite_token WHERE active = 1 AND pool_id = ?", pool_data["id"])
+        if len(token_row) != 1:
+            flash("Invalid pool token, contact administrator", "error")
+            return(redirect(url_for('show_pool', pool_slug=pool_slug)))
+        if token_row[0]["token"] != secret_key:
+            flash("Invalid token, contact administrator", "error")
+            return(redirect(url_for('show_pool', pool_slug=pool_slug)))
+        else:
+            # we're good, update session
+            if "pools" not in session:
+                session["pools"] = {}
+            session["pools"][pool_data["id"]] = {"pool_name": pool_data["pool_name"], "pool_slug": pool_data["pool_slug"], "invited": True}
+            return(redirect(url_for('join_pool', pool_slug=pool_slug)))
+        
 
 @app.route('/pool/<pool_slug>/join', methods=["GET", "POST"])
 def join_pool(pool_slug):
     if request.method == "GET":
         
         # Check pool_slug
-        pool_data = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)
-        if len(pool_data) != 1:
+        pool_row = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)
+        if len(pool_row) != 1:
             flash("Could not find a pool with that name.", "error")
             return redirect(url_for('index'))
-        pool_data = pool_data[0]
+        pool_data = pool_row[0]
+
+        # Check session for invited
+        if session.get("pools").get(pool_data["id"]).get("invited") != True:
+            flash("Please use invitiation link.", "error")
+            return redirect(url_for('show_pool', pool_slug=pool_slug))
 
         # get list of survivors
         contestants = db.execute("SELECT * FROM contestant WHERE season = (SELECT current_season FROM settings)")
@@ -704,16 +742,22 @@ def join_pool(pool_slug):
         name = request.form.get("name")
         picks = request.form.getlist("picks")
 
+        if not name:
+            flash("Name required.", "error")
+        if len(name) < 2:
+            flash("Name must be at least 2 characters", "error")
+        if len(name) > 20:
+            flash("Name must be at most 20 characters", "error")
+        name = escape(name)
+        
+
         num_picks = db.execute("SELECT * FROM pool WHERE pool_slug IS ?", pool_slug)[0]["num_picks"]
 
         #check number of picks
         if len(picks) != num_picks:
             flash("Wrong number of contestants selected.", "error")
             return redirect(url_for('join_pool', pool_slug=pool_slug))
-        
-
-        
-        # TODO this is causing problems if multiple people try to join a pool while one user is already logged in
+    
 
         # if user already logged in
         if session.get("user_id"):

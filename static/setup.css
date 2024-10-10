@@ -5,14 +5,10 @@ html {
  }
  *, *:before, *:after {
 	box-sizing: inherit;
- } /* https://www.paulirish.com/2012/box-sizing-border-box-ftw */
- /* not sure... if this is really a winner anymore - with the inherit - let's reconsider $todo */
+ } 
  
 :where(a) {
-	 /* we use links as parent elements so often, that we can default to this */
 	 display: block;
- 
-	 /* remove defaults */
 	 text-decoration: underline;
 	 color: blue;
  }
@@ -41,7 +37,6 @@ html {
  svg {
 	display: block;
 	width: 100%;
-	/* Safari seems to need height: 100% $todo - revisit */
  }
  
  /* selects for autonomous customelements which are inline by default */
